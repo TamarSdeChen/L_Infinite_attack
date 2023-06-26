@@ -340,16 +340,14 @@ def check_cond(cond, img_x, orig_confidence, confidence, center_matrix):
         return center_matrix[x, y] > value if comparison_operator == ">" else center_matrix[x, y] < value
 
 
-def get_intarvel(num_sqr, img_shape):
-    interval_x = range((num_sqr % 2) * img_shape / 2, (num_sqr % 2) * img_shape / 2 + img_shape / 2 - 1, 1)
-    if(num_sqr < 2):
-        interval_y = range(0, img_shape / 2 - 1, 1)
-    else:
-        interval_y = range(img_shape / 2, img_shape - 1, 1)
+def get_intarvel(row, col, img_shape):
+    interval_x = range(row * (img_shape / 2), row * (img_shape / 2) + (img_shape / 2) - 1, 1)
+    interval_y = range(col * (img_shape / 2), col * (img_shape / 2) + (img_shape / 2) - 1, 1)
     return [interval_x, interval_y]
 
 
 def try_perturb_img(model, img_x, img_y, pert_type, device):
+=======
     """
     Try perturbing a pixel using the specified perturbation type and evaluate the impact on the model's prediction.
 
@@ -384,6 +382,7 @@ def try_perturb_img(model, img_x, img_y, pert_type, device):
                     pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
                         pert_img[
                             0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
+=======
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
     #         pert_img[0, c, x, y] = lmh_dict['min_values'][c]
