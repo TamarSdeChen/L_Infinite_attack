@@ -330,14 +330,10 @@ def check_cond(cond, img_x, x, y, orig_confidence, confidence, center_matrix):
         return center_matrix[x, y] > value if comparison_operator == ">" else center_matrix[x, y] < value
 
 
-def get_intarvel(num_sqr, img_shape):
-    interval_x = range((num_sqr % 2) * img_shape / 2, (num_sqr % 2) * img_shape / 2 + img_shape / 2 - 1, 1)
-    if(num_sqr < 2):
-        interval_y = range(0, img_shape / 2 - 1, 1)
-    else:
-        interval_y = range(img_shape / 2, img_shape - 1, 1)
+def get_intarvel(row, col, img_shape):
+    interval_x = range(row * (img_shape / 2), row * (img_shape / 2) + (img_shape / 2) - 1, 1)
+    interval_y = range(col * (img_shape / 2), col * (img_shape / 2) + (img_shape / 2) - 1, 1)
     return [interval_x, interval_y]
-
 
 def try_perturb_img(model, img_x, img_y, pert_type, lmh_dict, device):
     """
@@ -363,14 +359,17 @@ def try_perturb_img(model, img_x, img_y, pert_type, lmh_dict, device):
     img_shape = img_x.shape[-1]
 
     # pert type is tuple pertobation for 4 squares
-    for num_sqr, square in enumerate(pert_type):
-        for c, pert in enumerate(square):
-          if pert == 0:
-              pert_img[0, c, get_intarvel(num_sqr, img_shape)[0] , get_intarvel(num_sqr, img_shape)[1]] =\
-                  pert_img[0, c, get_intarvel(num_sqr, img_shape)[0] , get_intarvel(num_sqr, img_shape)[1]] - EPSILON
-          else:
-              pert_img[0, c, get_intarvel(num_sqr, img_shape)[0], get_intarvel(num_sqr, img_shape)[1]] = \
-                      pert_img[0, c, get_intarvel(num_sqr, img_shape)[0], get_intarvel(num_sqr, img_shape)[1]] + EPSILON
+    for row in range(2):
+        for col in range(2):
+            for c, pert in enumerate(pert_type[1 * row + col]):
+                if pert == 0:
+                    pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
+                        pert_img[
+                            0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
+                else:
+                    pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
+                        pert_img[
+                            0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
 
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
