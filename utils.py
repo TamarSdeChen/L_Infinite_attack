@@ -52,33 +52,33 @@ def generate_real_value(cond_type, img_dim):
     return real_value
 
 
-def generate_center_matrix(img_dim):
-    """
-    Generate a center matrix of the specified image dimension.
-
-    This function creates a square matrix of size img_dim x img_dim, where each element
-    represents the l_inf distance of the element from the center of the matrix.
-
-    Args:
-        img_dim (int): An integer representing the image dimension.
-
-    Returns:
-        torch.Tensor: A torch.Tensor representing the center matrix with shape (img_dim, img_dim).
-    """
-    center_matrix = torch.zeros((img_dim, img_dim), device='cpu')
-    interval = [0, img_dim - 1]
-    distance = 0
-
-    for m in range(img_dim // 2):
-        for i in range(img_dim):
-            for j in range(img_dim):
-                if i in interval or j in interval:
-                    if center_matrix[i, j] == 0:
-                        center_matrix[i, j] = abs(distance + 1 - (img_dim / 2))
-        interval = [interval[0] + 1, interval[1] - 1]
-        distance += 1
-
-    return center_matrix
+# def generate_center_matrix(img_dim):
+#     """
+#     Generate a center matrix of the specified image dimension.
+#
+#     This function creates a square matrix of size img_dim x img_dim, where each element
+#     represents the l_inf distance of the element from the center of the matrix.
+#
+#     Args:
+#         img_dim (int): An integer representing the image dimension.
+#
+#     Returns:
+#         torch.Tensor: A torch.Tensor representing the center matrix with shape (img_dim, img_dim).
+#     """
+#     center_matrix = torch.zeros((img_dim, img_dim), device='cpu')
+#     interval = [0, img_dim - 1]
+#     distance = 0
+#
+#     for m in range(img_dim // 2):
+#         for i in range(img_dim):
+#             for j in range(img_dim):
+#                 if i in interval or j in interval:
+#                     if center_matrix[i, j] == 0:
+#                         center_matrix[i, j] = abs(distance + 1 - (img_dim / 2))
+#         interval = [interval[0] + 1, interval[1] - 1]
+#         distance += 1
+#
+#     return center_matrix
 
 def generate_random_condition(img_dim):
     """
@@ -94,10 +94,10 @@ def generate_random_condition(img_dim):
     """
     cond_type = random.choice(["MIN", "MAX", "MEAN", "SCORE_DIFF", "CENTER"])
     comparison_operator = random.choice([">", "<"])
-
-    if cond_type == "CENTER":
-        real_value = random.randint(1, (img_dim // 2) - 1)
-    elif cond_type == "SCORE_DIFF":
+    #
+    # if cond_type == "CENTER":
+    #     real_value = random.randint(1, (img_dim // 2) - 1)
+    if cond_type == "SCORE_DIFF":
         real_value = random.uniform(-0.02, 0.3)
     else:
         real_value = random.random()
@@ -280,7 +280,7 @@ def is_correct_prediction(model, img_x, img_y):
     pred = torch.argmax(predictions_vector)
     return pred.item() == img_y.item()
 
-def update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence):
+def update_min_confidence_dict(min_confidence_dict, permotion, curr_confidence):
     """
     Update the minimum confidence dictionary with the current confidence
     for a given pixel location (x, y).
@@ -291,13 +291,22 @@ def update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence):
         y (int): The y-coordinate of the pixel location.
         curr_confidence (float): The current confidence value for the pixel location.
     """
-    if (x, y) in min_confidence_dict:
-        min_confidence_dict[(x, y)] = min(curr_confidence, min_confidence_dict[(x, y)])
+    if permotion in min_confidence_dict:
+        min_confidence_dict[permotion] = min(curr_confidence, min_confidence_dict[permotion])
     else:
-        min_confidence_dict[(x, y)] = curr_confidence
+        min_confidence_dict[permotion] = curr_confidence
 
 
-def check_cond(cond, img_x, x, y, orig_confidence, confidence, center_matrix):
+def get_rgb(row, col, img_x):
+    img_shape = img_x.shape[-1]
+    size_square = img_shape/2
+    rgb = []
+    for c in range(3):
+        rgb.append(torch.mean(img_x[0, c, size_square*row :(size_square*row + size_square - 1), size_square*col : size_square*col + size_square - 1]))
+    return rgb
+
+
+def check_cond(cond, img_x, orig_confidence, confidence, center_matrix):
     """
     Check if a condition is satisfied for a pixel in the input image.
 
@@ -313,7 +322,8 @@ def check_cond(cond, img_x, x, y, orig_confidence, confidence, center_matrix):
     Returns:
         bool: True if the condition is satisfied, False otherwise.
     """
-    R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
+    #R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
+    R, G, B = get_rgb()
     min_rgb, max_rgb, mean_rgb = min(R, G, B), max(R, G, B), (R + G + B) / 3
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
@@ -339,7 +349,7 @@ def get_intarvel(num_sqr, img_shape):
     return [interval_x, interval_y]
 
 
-def try_perturb_img(model, img_x, img_y, pert_type, lmh_dict, device):
+def try_perturb_img(model, img_x, img_y, pert_type, device):
     """
     Try perturbing a pixel using the specified perturbation type and evaluate the impact on the model's prediction.
 
@@ -363,15 +373,17 @@ def try_perturb_img(model, img_x, img_y, pert_type, lmh_dict, device):
     img_shape = img_x.shape[-1]
 
     # pert type is tuple pertobation for 4 squares
-    for num_sqr, square in enumerate(pert_type):
-        for c, pert in enumerate(square):
-          if pert == 0:
-              pert_img[0, c, get_intarvel(num_sqr, img_shape)[0] , get_intarvel(num_sqr, img_shape)[1]] =\
-                  pert_img[0, c, get_intarvel(num_sqr, img_shape)[0] , get_intarvel(num_sqr, img_shape)[1]] - EPSILON
-          else:
-              pert_img[0, c, get_intarvel(num_sqr, img_shape)[0], get_intarvel(num_sqr, img_shape)[1]] = \
-                      pert_img[0, c, get_intarvel(num_sqr, img_shape)[0], get_intarvel(num_sqr, img_shape)[1]] + EPSILON
-
+    for row in range(2):
+        for col in range(2):
+            for c, pert in enumerate(pert_type[1 * row + col]):
+                if pert == 0:
+                    pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
+                        pert_img[
+                            0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
+                else:
+                    pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
+                        pert_img[
+                            0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
     #         pert_img[0, c, x, y] = lmh_dict['min_values'][c]
