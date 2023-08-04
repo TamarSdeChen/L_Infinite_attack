@@ -13,7 +13,9 @@ from CIFAR10_models.googlenet import GoogLeNet
 from torchvision.models import resnet50, densenet121
 from tqdm import tqdm
 
-EPSILON = 8/256
+EPSILON = 8 / 256
+
+
 def setup_devices():
     """
     Set up the available CUDA devices for parallel processing.
@@ -28,7 +30,6 @@ def setup_devices():
         for i in range(num_gpus):
             devices.append(torch.device(f'cuda:{i}'))
     return devices
-
 
 
 def generate_real_value(cond_type, img_dim):
@@ -79,6 +80,7 @@ def generate_center_matrix(img_dim):
         distance += 1
 
     return center_matrix
+
 
 def generate_random_condition(img_dim):
     """
@@ -174,7 +176,8 @@ def create_sorted_loc_pert_list(img_x, lmh_dict):
         lmh_dict (dict): A dictionary containing the 'min_values', 'mid_values', and 'max_values' for the perturbations.
 
     Returns:
-        list: A sorted list of tuples containing pixel locations and perturbation types.
+        #list: A sorted list of tuples containing pixel locations and perturbation types.
+
     """
     # img_shape = img_x.shape[-1]
     # distance_list = [i for i in range(0, img_shape) for _ in range(2)]
@@ -185,16 +188,17 @@ def create_sorted_loc_pert_list(img_x, lmh_dict):
     # )
 
     # loc_pert_dict = create_loc_pert_dict(img_x, lmh_dict['mid_values'])
-    possible_pertobation = [(0, 0, 0), (0, 0 ,1), (0, 1, 0), (1, 0 ,0), (0, 1, 1), (1, 1, 0), (1, 0, 1), (1, 1, 1)]
-    possible_loc_pert_list_with_prioritization = []
+    possible_pert = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (0, 1, 1), (1, 1, 0), (1, 0, 1), (1, 1, 1)]
+    possible_pert_list = []
 
-    for i in range(possible_pertobation.len):
-        for j in range(possible_pertobation.len):
-            for k in range(possible_pertobation.len):
-                for n in range(possible_pertobation.len):
-                    possible_loc_pert_list_with_prioritization.append(possible_pertobation[i], possible_pertobation[j], possible_pertobation[k], possible_pertobation[n])
+    for i in range(possible_pert.len):
+        for j in range(possible_pert.len):
+            for k in range(possible_pert.len):
+                for n in range(possible_pert.len):
+                    possible_pert_list.append((possible_pert[i], possible_pert[j],
+                                              possible_pert[k], possible_pert[n]))
 
-    return possible_loc_pert_list_with_prioritization
+    return possible_pert_list
 
 
 def get_orig_confidence(model, img_x, img_y, device):
@@ -215,6 +219,7 @@ def get_orig_confidence(model, img_x, img_y, device):
     orig_confidence = predictions_vector[0][img_y.item()].to(device)
     return orig_confidence
 
+
 def create_pert_type_to_idx_dict():
     """
     Create a dictionary to map perturbation types to their corresponding indices.
@@ -227,15 +232,28 @@ def create_pert_type_to_idx_dict():
         dict: A dictionary mapping perturbation types to their corresponding indices.
     """
     return {
-        ("MAX", "MAX", "MAX"): 0,
-        ("MIN", "MAX", "MAX"): 1,
-        ("MAX", "MIN", "MAX"): 2,
-        ("MAX", "MAX", "MIN"): 3,
-        ("MIN", "MIN", "MAX"): 4,
-        ("MAX", "MIN", "MIN"): 5,
-        ("MIN", "MAX", "MIN"): 6,
-        ("MIN", "MIN", "MIN"): 7,
+        (0, 0, 0): 0,
+        (1, 0, 0): 1,
+        (0, 1, 0): 2,
+        (0, 0, 1): 3,
+        (1, 1, 0): 4,
+        (0, 1, 1): 5,
+        (1, 0, 1): 6,
+        (1, 1, 1): 7,
     }
+
+
+def create_neighbors_list():
+    return (
+        [[(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+         [(0, 0, 0), (1, 1, 0), (1, 0, 1)],
+         [(1, 1, 0), (0, 0, 0), (0, 1, 1)],
+         [(1, 0, 1), (0, 1, 1), (0, 0, 0)],
+         [(0, 1, 0), (1, 0, 0), (1, 1, 1)],
+         [(1, 1, 1), (0, 0, 1), (0, 1, 0)],
+         [(0, 0, 1), (1, 1, 1), (1, 0, 0)],
+         [(0, 1, 1), (1, 0, 1), (1, 1, 0)]]
+    )
 
 
 def initialize_pixels_conf_queues(x, y, pert_type, curr_confidence):
@@ -279,6 +297,7 @@ def is_correct_prediction(model, img_x, img_y):
     predictions_vector = softmax(model(img_x).data)
     pred = torch.argmax(predictions_vector)
     return pred.item() == img_y.item()
+
 
 def update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence):
     """
@@ -334,6 +353,7 @@ def get_intarvel(row, col, img_shape):
     interval_x = range(row * (img_shape / 2), row * (img_shape / 2) + (img_shape / 2) - 1, 1)
     interval_y = range(col * (img_shape / 2), col * (img_shape / 2) + (img_shape / 2) - 1, 1)
     return [interval_x, interval_y]
+
 
 def try_perturb_img(model, img_x, img_y, pert_type, lmh_dict, device):
     """
@@ -438,7 +458,7 @@ def try_perturb_pixel_finer_granularity(x, y, model, img_x, img_y, g, mean_norm,
     n_queries_pert = 0
     pert_img = torch.clone(img_x)
     finer_pert_granularity_list = generate_finer_granularity(g)
-    norm_finer_pert_granularity_list = [[(val - mean_norm[i]) / std_norm[i] for i, val in enumerate(row)]\
+    norm_finer_pert_granularity_list = [[(val - mean_norm[i]) / std_norm[i] for i, val in enumerate(row)] \
                                         for row in finer_pert_granularity_list]
 
     softmax = nn.Softmax(dim=1)
@@ -533,7 +553,7 @@ def load_model(model_name):
     Returns:
         model (torch.nn.Module): The loaded and pre-trained model, and set to evaluation mode.
     """
-    #CIFAR-10
+    # CIFAR-10
     if model_name == "vgg16":
         model = vgg16_bn()
         model.load_state_dict(torch.load("CIFAR10_models/vgg16_bn.pt", map_location='cpu'))
@@ -544,7 +564,7 @@ def load_model(model_name):
         model = GoogLeNet()
         model.load_state_dict(torch.load("CIFAR10_models/googlenet.pt", map_location='cpu'))
 
-    #ImageNet
+    # ImageNet
     elif model_name == "resnet50":
         model = resnet50(pretrained=True)
     elif model_name == "densenet121":
@@ -635,7 +655,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                     break
 
                 if loc_perturbation == "STOP":
-                    #sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
+                    # sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
 
                     # Try perturbing the pixels with finer granularity
                     for loc_idx in range(max_g):
@@ -653,9 +673,9 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                 pert_type = loc_perturbation
                 # is_success, queries, curr_confidence = try_perturb_pixel(x, y, model, img_x, img_y, pert_type,\
                 #                                                          lmh_dict, device)
-                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_type,\
-                                                                         lmh_dict, device)
-                #update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence)
+                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_type, \
+                                                                       lmh_dict, device)
+                # update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence)
 
             if is_success:
                 successful_indices.append(batch_idx)
@@ -663,6 +683,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
 
                 if len(successful_indices) == num_synthesis_images:
                     return successful_indices
+
 
 def update_results_df(results_df, results_path, batch_idx, class_idx, is_success, n_queries, n_perturbed_pixels):
     """
