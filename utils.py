@@ -323,8 +323,16 @@ def check_cond(cond, img_x, orig_confidence, confidence, center_matrix):
         bool: True if the condition is satisfied, False otherwise.
     """
     #R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
-    R, G, B = get_rgb()
-    min_rgb, max_rgb, mean_rgb = min(R, G, B), max(R, G, B), (R + G + B) / 3
+    class RGB_per_squre:
+        def __init__(self, row, col, img_x, min_rgb, max_rgb, mean_rgb):
+            R, G, B = get_rgb(row, col, img_x)
+            self.min_rgb, self.max_rgb, self.mean_rgb = min(R, G, B), max(R, G, B), (R + G + B) / 3
+
+    matrix_rgb = np.zeros((2, 2))
+    for x in range(0, 2):
+        for y in range(0, 2):
+            matrix_rgb = RGB_per_squre(x, y, img_x)
+
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
 
@@ -347,7 +355,6 @@ def get_intarvel(row, col, img_shape):
 
 
 def try_perturb_img(model, img_x, img_y, pert_type, device):
-=======
     """
     Try perturbing a pixel using the specified perturbation type and evaluate the impact on the model's prediction.
 
@@ -382,7 +389,6 @@ def try_perturb_img(model, img_x, img_y, pert_type, device):
                     pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
                         pert_img[
                             0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
-=======
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
     #         pert_img[0, c, x, y] = lmh_dict['min_values'][c]
