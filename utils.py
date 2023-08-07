@@ -336,16 +336,38 @@ def check_cond(cond, img_x, orig_confidence, confidence, center_matrix):
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
 
-    if condition_type == "MIN":
-        return min_rgb > value if comparison_operator == ">" else min_rgb < value
-    elif condition_type == "MAX":
-        return max_rgb > value if comparison_operator == ">" else max_rgb < value
-    elif condition_type == "MEAN":
-        return mean_rgb > value if comparison_operator == ">" else mean_rgb < value
+    def bigger_than(cond_type, value):
+        counter = 0
+        for x in range(0, 2):
+            for y in range(0, 2):
+                if (cond_type == "MIN") && (matrix_rgb[x][y].min_rgb > value):
+                    counter += 1
+                elif(cond_type == "MAX") && (matrix_rgb[x][y].max_rgb > value):
+                    counter += 1
+                elif (cond_type == "MEAN") && (matrix_rgb[x][y].mean_rgb > value):
+                    counter += 1
+
+        if counter >= 3:
+            return True
+
+    def smaller_than(cond_type, value):
+        counter = 0
+        for x in range(0, 2):
+            for y in range(0, 2):
+                if (cond_type == "MIN") & & (matrix_rgb[x][y].min_rgb < value):
+                    counter += 1
+                elif (cond_type == "MAX") & & (matrix_rgb[x][y].max_rgb < value):
+                    counter += 1
+                elif (cond_type == "MEAN") & & (matrix_rgb[x][y].mean_rgb < value):
+                    counter += 1
+
+        if counter >= 3:
+            return True
+
+    if condition_type == "MIN" || condition_type == "MAX" ||  condition_type == "MEAN":
+        return bigger_than(condition_type, value) if comparison_operator == ">" else smaller_than(condition_type, value)
     elif condition_type == "SCORE_DIFF":
         return confidence_diff > value if comparison_operator == ">" else confidence_diff < value
-    elif condition_type == "CENTER":
-        return center_matrix[x, y] > value if comparison_operator == ">" else center_matrix[x, y] < value
 
 
 def get_intarvel(row, col, img_shape):
