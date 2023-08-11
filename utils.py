@@ -403,7 +403,7 @@ def get_intarvel(row, col, img_shape):
 
 
 
-def try_perturb_img(model, img_x, img_y, pert_square, device):
+def try_perturb_img(model, img_x, img_y, perturbation, device):
 
     """
     Try perturbing a pixel using the specified perturbation type and evaluate the impact on the model's prediction.
@@ -426,20 +426,20 @@ def try_perturb_img(model, img_x, img_y, pert_square, device):
     n_queries_pert = 0
     pert_img = torch.clone(img_x)
     img_shape = img_x.shape[-1]
-    # pert type is tuple perturbation for 4 squares ((,,),(,,),(,,),(,,)) # check this again
-
-    # pert type is tuple perturbation for 4 squares ((,,),(,,),(,,),(,,)) # check this again
-    for row in range(2):
-        for col in range(2):
-            for c, pert in enumerate(pert_type[1 * row + col]):
-                if pert == 0:
-                    pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
-                        pert_img[
-                            0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
-                else:
-                    pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
-                        pert_img[
-                            0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
+    # perturbation is tuple perturbation for 4 squares ((,,),(,,),(,,),(,,)) 
+    for num_square in range(4):
+        pert = perturbation()
+        for row in range(2):
+            for col in range(2):
+                for c, pert in enumerate(perturbation[2^row+2^col]): # (0,1,0)
+                    if pert == 0:
+                        pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
+                            pert_img[
+                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
+                    else:
+                        pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
+                            pert_img[
+                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
 
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
