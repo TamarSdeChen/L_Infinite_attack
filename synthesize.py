@@ -40,7 +40,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
     model.eval()
     # center_matrix = center_matrix.to(device)
 
-    pert_img_to_idx_dict = create_pert_img_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
+    pert_img_to_idx_dict = create_pert_type_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
 
     if is_test:
         results_df = pd.DataFrame(columns=["batch_idx", "class", "is_success", "queries"])
@@ -61,7 +61,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
         possible_loc_pert_list = create_sorted_loc_pert_list(img_x)  # for now - it returns basic LIST not sorted!
         # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
-        #indicators_tensor = torch.zeros((8, img_dim, img_dim))
+        # indicators_tensor = torch.zeros((8, img_dim, img_dim))
         orig_prob = get_orig_confidence(model, img_x, img_y, device)
         n_queries = 0
         min_prob_dict = {}
@@ -103,13 +103,13 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
 
             is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, pert_img, device)
 
-            #indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] = 1
+            # indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] = 1
 
             n_queries += queries
             if is_success:
                 sum_queries += n_queries
                 break
-            update_min_confidence_dict(min_prob_dict, x, y, curr_prob)
+            update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
             # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
             if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
@@ -120,7 +120,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                     pert_idx = pert_img_to_idx_dict[square_pert]
                     curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
                     for neighbor in curr_pert_neighbors_list:
-                        closest_pert = create_new_neighbors_pert(neighbor, num_square, curr_pert)  # this is a
+                        closest_pert = create_new_neighbors_pert(neighbor, num_square, pert_img)  # this is a
                         # tuple of 4 tuple
                         possible_loc_pert_list.append(possible_loc_pert_list. \
                                                       pop(possible_loc_pert_list.index(closest_pert)))
@@ -134,10 +134,10 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                 while (not pert_queue.empty()) and (not is_success):
                     pert_prob = pert_queue.get()  # this queue contains square perturbation
                     curr_pert = pert_prob[0]
-                    curr_prob_cond = pert_prob[1]
+                    curr_prob = pert_prob[1]
                     # change to Queue of perturbation only !!
 
-                    if check_cond(program.cond_4, img_x, orig_prob, curr_prob_cond):
+                    if check_cond(program.cond_4, img_x, orig_prob, curr_prob):
 
                         for num_square in range(4):  # currently we have 4 squares for 1 image
                             square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
@@ -146,7 +146,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                             # go over closest perturbation
                             for neighbor in curr_pert_neighbors_list:
                                 # remove from all possible perturbation list
-                                closest_pert = create_new_neighbors_pert(neighbor, num_square, curr_pert) # this is a
+                                closest_pert = create_new_neighbors_pert(neighbor, num_square, curr_pert)  # this is a
                                 # tuple of 4 tuple
                                 possible_loc_pert_list.pop(possible_loc_pert_list.index(closest_pert))
                                 if closest_pert is not None:

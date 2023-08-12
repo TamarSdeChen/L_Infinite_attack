@@ -53,33 +53,33 @@ def generate_real_value(cond_type, img_dim):
     return real_value
 
 
-# def generate_center_matrix(img_dim):
-#     """
-#     Generate a center matrix of the specified image dimension.
-#
-#     This function creates a square matrix of size img_dim x img_dim, where each element
-#     represents the l_inf distance of the element from the center of the matrix.
-#
-#     Args:
-#         img_dim (int): An integer representing the image dimension.
-#
-#     Returns:
-#         torch.Tensor: A torch.Tensor representing the center matrix with shape (img_dim, img_dim).
-#     """
-#     center_matrix = torch.zeros((img_dim, img_dim), device='cpu')
-#     interval = [0, img_dim - 1]
-#     distance = 0
-#
-#     for m in range(img_dim // 2):
-#         for i in range(img_dim):
-#             for j in range(img_dim):
-#                 if i in interval or j in interval:
-#                     if center_matrix[i, j] == 0:
-#                         center_matrix[i, j] = abs(distance + 1 - (img_dim / 2))
-#         interval = [interval[0] + 1, interval[1] - 1]
-#         distance += 1
-#
-#     return center_matrix
+def generate_center_matrix(img_dim):
+    """
+    Generate a center matrix of the specified image dimension.
+
+    This function creates a square matrix of size img_dim x img_dim, where each element
+    represents the l_inf distance of the element from the center of the matrix.
+
+    Args:
+        img_dim (int): An integer representing the image dimension.
+
+    Returns:
+        torch.Tensor: A torch.Tensor representing the center matrix with shape (img_dim, img_dim).
+    """
+    center_matrix = torch.zeros((img_dim, img_dim), device='cpu')
+    interval = [0, img_dim - 1]
+    distance = 0
+
+    for m in range(img_dim // 2):
+        for i in range(img_dim):
+            for j in range(img_dim):
+                if i in interval or j in interval:
+                    if center_matrix[i, j] == 0:
+                        center_matrix[i, j] = abs(distance + 1 - (img_dim / 2))
+        interval = [interval[0] + 1, interval[1] - 1]
+        distance += 1
+
+    return center_matrix
 
 
 def generate_random_condition(img_dim):
@@ -459,30 +459,30 @@ def try_perturb_img(model, img_x, img_y, perturbation, device):
     return False, n_queries_pert, confidence
 
 
-# def create_low_mid_high_values_dict(mean, std):
-#     """
-#     Generate a dictionary containing normalized 'max', 'mid', and 'min' values based on given mean and standard deviation.
-#
-#     The function \s a dictionary with keys 'max_values', 'mid_values', and 'min_values'. Each key corresponds to
-#     a numpy array that results from the normalization operation (value - mean) / std.
-#
-#     The 'max_values' key corresponds to maximal value for each channel after normalization.
-#     The 'mid_values' key corresponds to middle value for each channel after normalization.
-#     The 'min_values' key corresponds to minimal value for each channel after normalization.
-#
-#     Args:
-#         mean (numpy.array): A numpy array representing the mean values.
-#         std (numpy.array): A numpy array representing the standard deviations.
-#
-#     Returns:
-#         dict: A dictionary with keys 'max_values', 'mid_values', and 'min_values'. Each key corresponds to a numpy
-#         array of normalized values based on the input mean and standard deviation.
-#     """
-#     low_mid_high_values_dict = {}
-#     low_mid_high_values_dict["max_values"] = (np.array([1, 1, 1]) - np.array(mean)) / np.array(std)
-#     low_mid_high_values_dict["mid_values"] = (np.array([0.5, 0.5, 0.5]) - np.array(mean)) / np.array(std)
-#     low_mid_high_values_dict["min_values"] = (np.array([0, 0, 0]) - np.array(mean)) / np.array(std)
-#     return low_mid_high_values_dict
+def create_low_mid_high_values_dict(mean, std):
+    """
+    Generate a dictionary containing normalized 'max', 'mid', and 'min' values based on given mean and standard deviation.
+
+    The function \s a dictionary with keys 'max_values', 'mid_values', and 'min_values'. Each key corresponds to
+    a numpy array that results from the normalization operation (value - mean) / std.
+
+    The 'max_values' key corresponds to maximal value for each channel after normalization.
+    The 'mid_values' key corresponds to middle value for each channel after normalization.
+    The 'min_values' key corresponds to minimal value for each channel after normalization.
+
+    Args:
+        mean (numpy.array): A numpy array representing the mean values.
+        std (numpy.array): A numpy array representing the standard deviations.
+
+    Returns:
+        dict: A dictionary with keys 'max_values', 'mid_values', and 'min_values'. Each key corresponds to a numpy
+        array of normalized values based on the input mean and standard deviation.
+    """
+    low_mid_high_values_dict = {}
+    low_mid_high_values_dict["max_values"] = (np.array([1, 1, 1]) - np.array(mean)) / np.array(std)
+    low_mid_high_values_dict["mid_values"] = (np.array([0.5, 0.5, 0.5]) - np.array(mean)) / np.array(std)
+    low_mid_high_values_dict["min_values"] = (np.array([0, 0, 0]) - np.array(mean)) / np.array(std)
+    return low_mid_high_values_dict
 
 
 # def try_perturb_pixel_finer_granularity(x, y, model, img_x, img_y, g, mean_norm, std_norm, device):
