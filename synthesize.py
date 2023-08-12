@@ -10,7 +10,7 @@ from metropolis_hastings import run_MH
 from utils import *
 
 
-def run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, max_queries, lmh_dict, mean_norm,
+def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                 std_norm, device, is_test=False, class_idx=None, results_path=None, max_k=1):
     """
     Run the specified program for adversarial attacks on a given model using the provided dataloader.
@@ -20,10 +20,11 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, ma
         model (nn.Module): The neural network model to be attacked.
         dataloader (DataLoader): DataLoader containing the input images and labels.
         img_dim (int): The dimension of the input image (assuming a square image).
-        center_matrix (torch.Tensor): A matrix representing the distance of each pixel to the image center.
-        max_g (int): The maximum number of pixels to perturb with finer granularity.
-        g (int): The level of granularity.
+        center_matrix (torch.Tensor): A matrix representing the distance of each pixel to the image center. - REMOVE
+        max_g (int): The maximum number of pixels to perturb with finer granularity.- REMOVE
+        g (int): The level of granularity.- REMOVE
         lmh_dict (dict): A dictionary containing the 'min_values', 'mid_values', and 'max_values' for the perturbations.
+        - FOR NOW WE NEED TO REMOVE IT
         mean_norm (list[float]):  The mean values for each channel used in image normalization.
         std_norm (list[float]):  The standard deviation values for each channel used in image normalization.
         device (torch.device): The device to perform computations on (e.g., 'cuda' or 'cpu').
@@ -38,11 +39,15 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, ma
     model = model.to(device)
     model.eval()
     # center_matrix = center_matrix.to(device)
-    pert_type_to_idx_dict = create_pert_type_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ...
+
+    pert_type_to_idx_dict = create_pert_type_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
+
     if is_test:
         results_df = pd.DataFrame(columns=["batch_idx", "class", "is_success", "queries"])
     num_imgs, num_success, sum_queries = 0, 0, 0
     max_queries = max_queries
+
+    # go over the images data and +1 if we found correctly classified image
     for batch_idx, (data, target) in enumerate(dataloader):
         is_success = False
         img_x, img_y = data.to(device), target.to(device)
@@ -53,10 +58,10 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, ma
         if not is_correct_prediction(model, img_x, img_y):
             continue
         num_imgs += 1
-        possible_loc_pert_list = create_sorted_loc_pert_list(img_x, lmh_dict)  # for now - it returns basic
-        # pertubations list, each item contain 4 tuples because the image is split to 4 squres
+        possible_loc_pert_list = create_sorted_loc_pert_list(img_x)  # for now - it returns basic LIST not sorted!
+        # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
-        indicators_tensor = torch.zeros((8, img_dim, img_dim))
+        #indicators_tensor = torch.zeros((8, img_dim, img_dim))
         orig_prob = get_orig_confidence(model, img_x, img_y, device)
         n_queries = 0
         min_prob_dict = {}
