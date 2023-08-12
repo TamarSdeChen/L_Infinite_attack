@@ -261,7 +261,7 @@ def create_new_neighbors_pert(neighbor, num_square, curr_pert):
     return curr_pert
 
 # change this for create only perturbation and current confidence queue
-def initialize_pixels_conf_queues(x, y, pert_type, curr_confidence):
+def initialize_pixels_conf_queues(pert_img, curr_confidence):
     """
     Initialize two queue objects with initial pixel location, perturbation type and current confidence.
 
@@ -279,11 +279,10 @@ def initialize_pixels_conf_queues(x, y, pert_type, curr_confidence):
     tuple: A tuple containing two queue.Queue objects, each initialized with a tuple
            containing the pixel location, perturbation type and current confidence.
     """
-    loc_queue = queue.Queue()
-    loc_queue.put(((x, y), pert_type, curr_confidence))
+
     pert_queue = queue.Queue()
-    pert_queue.put(((x, y), pert_type, curr_confidence))
-    return loc_queue, pert_queue
+    pert_queue.put((pert_img, curr_confidence))
+    return pert_queue
 
 
 def is_correct_prediction(model, img_x, img_y):
@@ -331,7 +330,7 @@ def get_rgb(row, col, img_x):
     return rgb
 
 
-def check_cond(cond, img_x, orig_confidence, confidence, center_matrix):
+def check_cond(cond, img_x, orig_confidence, confidence):
     """
     Check if a condition is satisfied for a pixel in the input image.
 

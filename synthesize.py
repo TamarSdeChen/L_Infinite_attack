@@ -40,7 +40,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
     model.eval()
     # center_matrix = center_matrix.to(device)
 
-    pert_type_to_idx_dict = create_pert_type_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
+    pert_img_to_idx_dict = create_pert_img_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
 
     if is_test:
         results_df = pd.DataFrame(columns=["batch_idx", "class", "is_success", "queries"])
@@ -65,57 +65,59 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
         orig_prob = get_orig_confidence(model, img_x, img_y, device)
         n_queries = 0
         min_prob_dict = {}
-        few_pixel_list = []
+        # few_pixel_list = []
         all_pert_neighbors_list = create_neighbors_list()
-        for pert_type in possible_loc_pert_list:  # pert_type is tuple with 4 tuple inside
+        for pert_img in possible_loc_pert_list:  # pert_img is tuple with 4 tuple inside
             if (n_queries >= max_queries and is_test) or is_success:
                 break
 
-            if pert_type == "STOP":
-                # Few pixel attack
-                if is_test and max_k > 1:
-                    few_pixel_list = sorted(few_pixel_list, key=lambda x: x[2])
-                    is_success, queries, curr_prob, n_perturbed_pixels = try_perturb_few_pixels(max_k, few_pixel_list,
-                                                                                                model, img_x, img_y,
-                                                                                                n_queries, max_queries,
-                                                                                                lmh_dict, device)
-                    n_queries += queries
-                    if is_success:
-                        sum_queries += n_queries
-                    break
+            if pert_img == "STOP":
+                # # Few pixel attack
+                # if is_test and max_k > 1:
+                #     few_pixel_list = sorted(few_pixel_list, key=lambda x: x[2])
+                #     is_success, queries, curr_prob, n_perturbed_pixels = try_perturb_few_pixels(max_k, few_pixel_list,
+                #                                                                                 model, img_x, img_y,
+                #                                                                                 n_queries, max_queries,
+                #                                                                                 lmh_dict, device)
+                #     n_queries += queries
+                #     if is_success:
+                #         sum_queries += n_queries
+                #     break
 
-                # Finer granularity
-                sorted_loc_list = sorted(min_prob_dict.items(), key=lambda x: x[1])
-                for loc_idx in range(max_g):
-                    if g <= 0:
-                        break
-                    is_success, queries, curr_prob = try_perturb_pixel_finer_granularity(sorted_loc_list[loc_idx][0][0],
-                                                                                         sorted_loc_list[loc_idx][0][1],
-                                                                                         model, img_x, img_y, g,
-                                                                                         mean_norm, std_norm, device)
-                    n_queries += queries
-                    if is_success:
-                        sum_queries += n_queries
+                # # Finer granularity
+                # sorted_loc_list = sorted(min_prob_dict.items(), key=lambda x: x[1])
+                # for loc_idx in range(max_g):
+                #     if g <= 0:
+                #         break
+                #     is_success, queries, curr_prob = try_perturb_pixel_finer_granularity(sorted_loc_list[loc_idx][0][0],
+                #                                                                          sorted_loc_list[loc_idx][0][1],
+                #                                                                          model, img_x, img_y, g,
+                #                                                                          mean_norm, std_norm, device)
+                #     n_queries += queries
+                #     if is_success:
+                #         sum_queries += n_queries
                 continue
 
-            if indicators_tensor[pert_type_to_idx_dict[pert_type]][x][y] > 0:  # we dont have it, change
-                continue
-            is_success, queries, curr_prob = try_perturb_img(x, y, model, img_x, img_y, pert_type, lmh_dict,
-                                                             device)  # change parameters
-            indicators_tensor[pert_type_to_idx_dict[pert_type]][x][y] = 1
+            # if indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] > 0:  # we dont have it, change
+            #     continue
+
+            is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, pert_img, device)
+
+            #indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] = 1
+
             n_queries += queries
             if is_success:
                 sum_queries += n_queries
                 break
             update_min_confidence_dict(min_prob_dict, x, y, curr_prob)
-            few_pixel_list.append([(x, y), pert_type, curr_prob.item()])
+            # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
-            if check_cond(program.cond_2, img_x, x, y, orig_prob, curr_prob, center_matrix):
+            if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
                 for num_square in range(4):  # currently we have 4 squares for 1 image
-                    square_pert = pert_type[num_square]  # this is a tuple (-,-,-)
+                    square_pert = pert_img[num_square]  # this is a tuple (-,-,-)
 
                     # push back all the neighbors of this current square
-                    pert_idx = pert_type_to_idx_dict[square_pert]
+                    pert_idx = pert_img_to_idx_dict[square_pert]
                     curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
                     for neighbor in curr_pert_neighbors_list:
                         closest_pert = create_new_neighbors_pert(neighbor, num_square, curr_pert)  # this is a
@@ -123,21 +125,23 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                         possible_loc_pert_list.append(possible_loc_pert_list. \
                                                       pop(possible_loc_pert_list.index(closest_pert)))
             # end new code
-            pert_queue = initialize_pixels_conf_queues(pert_type, curr_prob)  # pert_type is a
+            pert_queue = initialize_pixels_conf_queues(pert_img, curr_prob)  # pert_img is a
             # perturbation contain 4 tuples
             while (not pert_queue.empty()) and not is_success:
                 if n_queries >= max_queries and is_test:
                     break
 
                 while (not pert_queue.empty()) and (not is_success):
-                    curr_pert = pert_queue.get()  # this queue contains square perturbation
+                    pert_prob = pert_queue.get()  # this queue contains square perturbation
+                    curr_pert = pert_prob[0]
+                    curr_prob_cond = pert_prob[1]
                     # change to Queue of perturbation only !!
 
-                    if check_cond(program.cond_4, img_x, new_x, new_y, orig_prob):
+                    if check_cond(program.cond_4, img_x, orig_prob, curr_prob_cond):
 
                         for num_square in range(4):  # currently we have 4 squares for 1 image
                             square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
-                            pert_idx = pert_type_to_idx_dict[square_pert]
+                            pert_idx = pert_img_to_idx_dict[square_pert]
                             curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
                             # go over closest perturbation
                             for neighbor in curr_pert_neighbors_list:
@@ -147,17 +151,17 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                                 possible_loc_pert_list.pop(possible_loc_pert_list.index(closest_pert))
                                 if closest_pert is not None:
                                     # maybe add indicators matrix that indicate on repeats
-                                    # if indicators_tensor[pert_type_to_idx_dict[new_pert_type]][new_x][new_y] > 0:
+                                    # if indicators_tensor[pert_img_to_idx_dict[new_pert_img]][new_x][new_y] > 0:
                                     #     continue
                                     if n_queries >= max_queries and is_test:
                                         break
 
                                     is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, closest_pert,
                                                                                      device)
-                                    # indicators_tensor[pert_type_to_idx_dict[new_pert_type]][new_x][new_y] = 1
+                                    # indicators_tensor[pert_img_to_idx_dict[new_pert_img]][new_x][new_y] = 1
 
                                     update_min_confidence_dict(min_prob_dict, closest_pert, curr_prob)
-                                    # few_pixel_list.append([(new_x, new_y), new_pert_type, curr_prob.item()]) # we currently dont have it
+                                    # few_pixel_list.append([(new_x, new_y), new_pert_img, curr_prob.item()]) # we currently dont have it
                                     n_queries += queries
 
                                     pert_queue.put((closest_pert, curr_prob))
