@@ -262,6 +262,7 @@ def create_new_neighbors_pert(neighbor, num_square, curr_pert):
 
 # change this for create only perturbation and current confidence queue
 def initialize_pixels_conf_queues(pert_img, curr_confidence):
+
     """
     Initialize two queue objects with initial pixel location, perturbation type and current confidence.
 
@@ -280,8 +281,10 @@ def initialize_pixels_conf_queues(pert_img, curr_confidence):
            containing the pixel location, perturbation type and current confidence.
     """
 
+
     pert_queue = queue.Queue()
     pert_queue.put((pert_img, curr_confidence))
+
     return pert_queue
 
 
