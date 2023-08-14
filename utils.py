@@ -53,33 +53,33 @@ def generate_real_value(cond_type, img_dim):
     return real_value
 
 
-# def generate_center_matrix(img_dim):
-#     """
-#     Generate a center matrix of the specified image dimension.
-#
-#     This function creates a square matrix of size img_dim x img_dim, where each element
-#     represents the l_inf distance of the element from the center of the matrix.
-#
-#     Args:
-#         img_dim (int): An integer representing the image dimension.
-#
-#     Returns:
-#         torch.Tensor: A torch.Tensor representing the center matrix with shape (img_dim, img_dim).
-#     """
-#     center_matrix = torch.zeros((img_dim, img_dim), device='cpu')
-#     interval = [0, img_dim - 1]
-#     distance = 0
-#
-#     for m in range(img_dim // 2):
-#         for i in range(img_dim):
-#             for j in range(img_dim):
-#                 if i in interval or j in interval:
-#                     if center_matrix[i, j] == 0:
-#                         center_matrix[i, j] = abs(distance + 1 - (img_dim / 2))
-#         interval = [interval[0] + 1, interval[1] - 1]
-#         distance += 1
-#
-#     return center_matrix
+def generate_center_matrix(img_dim):
+    """
+    Generate a center matrix of the specified image dimension.
+
+    This function creates a square matrix of size img_dim x img_dim, where each element
+    represents the l_inf distance of the element from the center of the matrix.
+
+    Args:
+        img_dim (int): An integer representing the image dimension.
+
+    Returns:
+        torch.Tensor: A torch.Tensor representing the center matrix with shape (img_dim, img_dim).
+    """
+    center_matrix = torch.zeros((img_dim, img_dim), device='cpu')
+    interval = [0, img_dim - 1]
+    distance = 0
+
+    for m in range(img_dim // 2):
+        for i in range(img_dim):
+            for j in range(img_dim):
+                if i in interval or j in interval:
+                    if center_matrix[i, j] == 0:
+                        center_matrix[i, j] = abs(distance + 1 - (img_dim / 2))
+        interval = [interval[0] + 1, interval[1] - 1]
+        distance += 1
+
+    return center_matrix
 
 
 def generate_random_condition(img_dim):
@@ -118,53 +118,53 @@ def argsort(seq):
     return sorted(range(len(seq)), key=lambda i: seq[i])
 
 
-def create_loc_pert_dict(img_x, mid_values):
-    """
-    Create a dictionary with pixel locations as keys and a list of perturbation types as values.
+# def create_loc_pert_dict(img_x, mid_values):
+#     """
+#     Create a dictionary with pixel locations as keys and a list of perturbation types as values.
+#
+#     Args:
+#         img_x (torch.Tensor): The input image tensor.
+#         mid_values (list): A list of mid values for each color channel (e.g., [0.5, 0.5, 0.5]).
+#
+#     Returns:
+#         dict: A dictionary with pixel locations as keys and a list of perturbation types as values.
+#     """
+#     pixel_pert_dict = {}
+#     img_shape = img_x.shape[-1]
+#
+#     for x in range(img_shape):
+#         for y in range(img_shape):
+#             pert_type_list = []
+#             diff_list = []
+#
+#             for c in range(3):
+#                 channel_value = img_x[0, c, x, y].item()
+#                 diff_list.append(abs(channel_value - mid_values[c]))
+#                 pert_type_list.append("MAX" if channel_value < mid_values[c] else "MIN")
+#
+#             sorted_diff_list = argsort(diff_list)
+#             all_pert_list = [tuple(pert_type_list)]
+#
+#             for idx in sorted_diff_list:
+#                 new_pert = copy.deepcopy(pert_type_list)
+#                 new_pert[idx] = "MIN" if pert_type_list[idx] == "MAX" else "MAX"
+#                 all_pert_list.append(tuple(new_pert))
+#
+#             opposite_pert_type_list = ["MIN" if elem == "MAX" else "MAX" for elem in pert_type_list]
+#             sorted_diff_list.reverse()
+#
+#             for idx in sorted_diff_list:
+#                 new_pert = copy.deepcopy(opposite_pert_type_list)
+#                 new_pert[idx] = "MIN" if opposite_pert_type_list[idx] == "MAX" else "MAX"
+#                 all_pert_list.append(tuple(new_pert))
+#
+#             all_pert_list.append(tuple(opposite_pert_type_list))
+#             pixel_pert_dict[(x, y)] = all_pert_list
+#
+#     return pixel_pert_dict
 
-    Args:
-        img_x (torch.Tensor): The input image tensor.
-        mid_values (list): A list of mid values for each color channel (e.g., [0.5, 0.5, 0.5]).
 
-    Returns:
-        dict: A dictionary with pixel locations as keys and a list of perturbation types as values.
-    """
-    pixel_pert_dict = {}
-    img_shape = img_x.shape[-1]
-
-    for x in range(img_shape):
-        for y in range(img_shape):
-            pert_type_list = []
-            diff_list = []
-
-            for c in range(3):
-                channel_value = img_x[0, c, x, y].item()
-                diff_list.append(abs(channel_value - mid_values[c]))
-                pert_type_list.append("MAX" if channel_value < mid_values[c] else "MIN")
-
-            sorted_diff_list = argsort(diff_list)
-            all_pert_list = [tuple(pert_type_list)]
-
-            for idx in sorted_diff_list:
-                new_pert = copy.deepcopy(pert_type_list)
-                new_pert[idx] = "MIN" if pert_type_list[idx] == "MAX" else "MAX"
-                all_pert_list.append(tuple(new_pert))
-
-            opposite_pert_type_list = ["MIN" if elem == "MAX" else "MAX" for elem in pert_type_list]
-            sorted_diff_list.reverse()
-
-            for idx in sorted_diff_list:
-                new_pert = copy.deepcopy(opposite_pert_type_list)
-                new_pert[idx] = "MIN" if opposite_pert_type_list[idx] == "MAX" else "MAX"
-                all_pert_list.append(tuple(new_pert))
-
-            all_pert_list.append(tuple(opposite_pert_type_list))
-            pixel_pert_dict[(x, y)] = all_pert_list
-
-    return pixel_pert_dict
-
-
-def create_sorted_loc_pert_list(img_x, lmh_dict):
+def create_sorted_loc_pert_list(img_x):
     """
     Create a sorted list of pixel locations and perturbation types based on the difference of the perturbation type
     from the original pixel as the primary key and the distance from the center as a secondary key.
@@ -172,6 +172,7 @@ def create_sorted_loc_pert_list(img_x, lmh_dict):
     Args:
         img_x (torch.Tensor): The input image tensor.
         lmh_dict (dict): A dictionary containing the 'min_values', 'mid_values', and 'max_values' for the perturbations.
+        - FOR NOW WE REMOVE IT
 
     Returns:
         #list: A sorted list of tuples containing pixel locations and perturbation types.
@@ -260,7 +261,8 @@ def create_new_neighbors_pert(neighbor, num_square, curr_pert):
     return curr_pert
 
 # change this for create only perturbation and current confidence queue
-def initialize_pixels_conf_queues(pert_type, curr_confidence):
+def initialize_pixels_conf_queues(pert_img, curr_confidence):
+
     """
     Initialize two queue objects with initial pixel location, perturbation type and current confidence.
 
@@ -278,8 +280,11 @@ def initialize_pixels_conf_queues(pert_type, curr_confidence):
     tuple: A tuple containing two queue.Queue objects, each initialized with a tuple
            containing the pixel location, perturbation type and current confidence.
     """
+
+
     pert_queue = queue.Queue()
-    pert_queue.put((pert_type, curr_confidence))
+    pert_queue.put((pert_img, curr_confidence))
+
     return pert_queue
 
 
@@ -328,7 +333,7 @@ def get_rgb(row, col, img_x):
     return rgb
 
 
-def check_cond(cond, img_x, orig_confidence, confidence, center_matrix):
+def check_cond(cond, img_x, orig_confidence, confidence):
     """
     Check if a condition is satisfied for a pixel in the input image.
 
@@ -483,69 +488,69 @@ def create_low_mid_high_values_dict(mean, std):
     return low_mid_high_values_dict
 
 
-def try_perturb_pixel_finer_granularity(x, y, model, img_x, img_y, g, mean_norm, std_norm, device):
-    """
-    Try perturbing a pixel with finer granularity and evaluate the impact on the model's prediction.
+# def try_perturb_pixel_finer_granularity(x, y, model, img_x, img_y, g, mean_norm, std_norm, device):
+#     """
+#     Try perturbing a pixel with finer granularity and evaluate the impact on the model's prediction.
+#
+#     Args:
+#         x (int): The x-coordinate of the pixel to perturb.
+#         y (int): The y-coordinate of the pixel to perturb.
+#         model (nn.Module): The trained model to evaluate the perturbation on.
+#         img_x (torch.Tensor): The input image tensor.
+#         img_y (torch.Tensor): The ground truth label tensor for the input image.
+#         g (int): The granularity level for generating finer perturbations.
+#         mean_norm (list[float]):  The mean values for each channel used in image normalization.
+#         std_norm (list[float]):  The standard deviation values for each channel used in image normalization.
+#         device (torch.device): The device to perform computations on (e.g., 'cuda' or 'cpu').
+#
+#     Returns:
+#         bool: True if the perturbation causes a misclassification, False otherwise.
+#         int: The number of queries performed during the perturbation.
+#         torch.Tensor: The confidence of the true class after perturbation.
+#     """
+#     n_queries_pert = 0
+#     pert_img = torch.clone(img_x)
+#     finer_pert_granularity_list = generate_finer_granularity(g)
+#     norm_finer_pert_granularity_list = [[(val - mean_norm[i]) / std_norm[i] for i, val in enumerate(row)] \
+#                                         for row in finer_pert_granularity_list]
+#
+#     softmax = nn.Softmax(dim=1)
+#
+#     for pert in norm_finer_pert_granularity_list:
+#         pert_img[0, :, x, y] = torch.tensor(pert)  # Apply the perturbation to all channels at once
+#         n_queries_pert += 1
+#         predictions_vector = softmax(model(pert_img).data)
+#         pred = torch.argmax(predictions_vector)
+#         confidence = predictions_vector[0][img_y.item()].to(device)
+#
+#         if pred.item() != img_y.item():
+#             return True, n_queries_pert, confidence
+#
+#     return False, n_queries_pert, confidence
 
-    Args:
-        x (int): The x-coordinate of the pixel to perturb.
-        y (int): The y-coordinate of the pixel to perturb.
-        model (nn.Module): The trained model to evaluate the perturbation on.
-        img_x (torch.Tensor): The input image tensor.
-        img_y (torch.Tensor): The ground truth label tensor for the input image.
-        g (int): The granularity level for generating finer perturbations.
-        mean_norm (list[float]):  The mean values for each channel used in image normalization.
-        std_norm (list[float]):  The standard deviation values for each channel used in image normalization.
-        device (torch.device): The device to perform computations on (e.g., 'cuda' or 'cpu').
 
-    Returns:
-        bool: True if the perturbation causes a misclassification, False otherwise.
-        int: The number of queries performed during the perturbation.
-        torch.Tensor: The confidence of the true class after perturbation.
-    """
-    n_queries_pert = 0
-    pert_img = torch.clone(img_x)
-    finer_pert_granularity_list = generate_finer_granularity(g)
-    norm_finer_pert_granularity_list = [[(val - mean_norm[i]) / std_norm[i] for i, val in enumerate(row)] \
-                                        for row in finer_pert_granularity_list]
-
-    softmax = nn.Softmax(dim=1)
-
-    for pert in norm_finer_pert_granularity_list:
-        pert_img[0, :, x, y] = torch.tensor(pert)  # Apply the perturbation to all channels at once
-        n_queries_pert += 1
-        predictions_vector = softmax(model(pert_img).data)
-        pred = torch.argmax(predictions_vector)
-        confidence = predictions_vector[0][img_y.item()].to(device)
-
-        if pred.item() != img_y.item():
-            return True, n_queries_pert, confidence
-
-    return False, n_queries_pert, confidence
-
-
-def generate_finer_granularity(g):
-    """
-    Generate a list of color perturbations with finer granularity.
-
-    Args:
-        g (int): The granularity level. Higher values produce a more fine-grained list of perturbations.
-
-    Returns:
-        list: A list of color perturbations with finer granularity.
-    """
-    finer_granularity_list = []
-    n_steps = 2 ** g
-
-    for i in range(0, n_steps + 1):
-        for j in range(0, n_steps + 1):
-            for k in range(0, n_steps + 1):
-                r, g, b = i / n_steps, j / n_steps, k / n_steps
-
-                if r not in [0, 1] or g not in [0, 1] or b not in [0, 1]:
-                    finer_granularity_list.append([r, g, b])
-
-    return finer_granularity_list
+# def generate_finer_granularity(g):
+#     """
+#     Generate a list of color perturbations with finer granularity.
+#
+#     Args:
+#         g (int): The granularity level. Higher values produce a more fine-grained list of perturbations.
+#
+#     Returns:
+#         list: A list of color perturbations with finer granularity.
+#     """
+#     finer_granularity_list = []
+#     n_steps = 2 ** g
+#
+#     for i in range(0, n_steps + 1):
+#         for j in range(0, n_steps + 1):
+#             for k in range(0, n_steps + 1):
+#                 r, g, b = i / n_steps, j / n_steps, k / n_steps
+#
+#                 if r not in [0, 1] or g not in [0, 1] or b not in [0, 1]:
+#                     finer_granularity_list.append([r, g, b])
+#
+#     return finer_granularity_list
 
 
 def get_data_set(args, is_train=True):
@@ -762,56 +767,56 @@ def update_results_df(results_df, results_path, batch_idx, class_idx, is_success
     return results_df
 
 
-def try_perturb_few_pixels(max_k, few_pixel_list, model, img_x, img_y, curr_n_queries, max_queries, lmh_dict, device):
-    """
-    Attempts to perturb a few pixels in the image to cause misclassification.
-
-    Parameters:
-    max_k (int): Maximum number of pixels that can be perturbed.
-    few_pixel_list (list): List of pixels that can be perturbed. Each entry in the list is a tuple with pixel location and perturbation type.
-    model (torch.nn.Module): The PyTorch model to use for prediction.
-    img_x (torch.Tensor): The input image tensor to be perturbed.
-    img_y (torch.Tensor): The true label of the image.
-    curr_n_queries (int): The current number of queries made to the model.
-    max_queries (int): The maximum number of queries allowed.
-    lmh_dict (dict): Dictionary holding the min and max values for pixel perturbation.
-    device (str or torch.device): The device (CPU or GPU) where the computations will be performed.
-
-    Returns:
-    tuple: A tuple containing:
-        - bool: True if the perturbation caused misclassification, False otherwise.
-        - int: The total number of queries made to the model.
-        - float: The confidence of the model's prediction for the true label.
-        - int: The number of pixels perturbed.
-    """
-    n_possible_pert = min(len(few_pixel_list), 100)
-    weights_pert = [(2 * n_possible_pert - 2 * i + 1) / n_possible_pert ** 2 for i in range(1, n_possible_pert + 1)]
-    n_queries_pert = 0
-    curr_k = 2
-    n_queries_k = 0
-    while curr_n_queries + n_queries_pert < max_queries:
-        n_queries_k += 1
-        if n_queries_k > 1000 and curr_k < max_k:
-            curr_k = min(curr_k + 1, max_k)
-            n_queries_k = 1
-
-        pert_img = torch.clone(img_x)
-        n_queries_pert += 1
-        sampled_pert = random.choices(few_pixel_list[:n_possible_pert], weights=weights_pert, k=curr_k)
-        for loc_pert in sampled_pert:
-            x, y = loc_pert[0]
-            pert_type = loc_pert[1]
-            for c in range(3):
-                if pert_type[c] == "MIN":
-                    pert_img[0][c][x][y] = lmh_dict['min_values'][c]
-                else:
-                    pert_img[0][c][x][y] = lmh_dict['min_values'][c]
-
-        softmax = nn.Softmax(dim=1)
-        predictions_vector = softmax(model(pert_img).data)
-        pred = torch.argmax(predictions_vector)
-        confidence = predictions_vector[0][img_y.item()].to(device)
-        if pred.item() != img_y.item():
-            return True, n_queries_pert, confidence, curr_k
-
-    return False, n_queries_pert, 0, curr_k
+# def try_perturb_few_pixels(max_k, few_pixel_list, model, img_x, img_y, curr_n_queries, max_queries, lmh_dict, device):
+#     """
+#     Attempts to perturb a few pixels in the image to cause misclassification.
+#
+#     Parameters:
+#     max_k (int): Maximum number of pixels that can be perturbed.
+#     few_pixel_list (list): List of pixels that can be perturbed. Each entry in the list is a tuple with pixel location and perturbation type.
+#     model (torch.nn.Module): The PyTorch model to use for prediction.
+#     img_x (torch.Tensor): The input image tensor to be perturbed.
+#     img_y (torch.Tensor): The true label of the image.
+#     curr_n_queries (int): The current number of queries made to the model.
+#     max_queries (int): The maximum number of queries allowed.
+#     lmh_dict (dict): Dictionary holding the min and max values for pixel perturbation.
+#     device (str or torch.device): The device (CPU or GPU) where the computations will be performed.
+#
+#     Returns:
+#     tuple: A tuple containing:
+#         - bool: True if the perturbation caused misclassification, False otherwise.
+#         - int: The total number of queries made to the model.
+#         - float: The confidence of the model's prediction for the true label.
+#         - int: The number of pixels perturbed.
+#     """
+#     n_possible_pert = min(len(few_pixel_list), 100)
+#     weights_pert = [(2 * n_possible_pert - 2 * i + 1) / n_possible_pert ** 2 for i in range(1, n_possible_pert + 1)]
+#     n_queries_pert = 0
+#     curr_k = 2
+#     n_queries_k = 0
+#     while curr_n_queries + n_queries_pert < max_queries:
+#         n_queries_k += 1
+#         if n_queries_k > 1000 and curr_k < max_k:
+#             curr_k = min(curr_k + 1, max_k)
+#             n_queries_k = 1
+#
+#         pert_img = torch.clone(img_x)
+#         n_queries_pert += 1
+#         sampled_pert = random.choices(few_pixel_list[:n_possible_pert], weights=weights_pert, k=curr_k)
+#         for loc_pert in sampled_pert:
+#             x, y = loc_pert[0]
+#             pert_type = loc_pert[1]
+#             for c in range(3):
+#                 if pert_type[c] == "MIN":
+#                     pert_img[0][c][x][y] = lmh_dict['min_values'][c]
+#                 else:
+#                     pert_img[0][c][x][y] = lmh_dict['min_values'][c]
+#
+#         softmax = nn.Softmax(dim=1)
+#         predictions_vector = softmax(model(pert_img).data)
+#         pred = torch.argmax(predictions_vector)
+#         confidence = predictions_vector[0][img_y.item()].to(device)
+#         if pred.item() != img_y.item():
+#             return True, n_queries_pert, confidence, curr_k
+#
+#     return False, n_queries_pert, 0, curr_k
