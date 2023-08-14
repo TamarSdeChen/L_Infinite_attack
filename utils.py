@@ -190,10 +190,10 @@ def create_sorted_loc_pert_list(img_x):
     possible_pert = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (0, 1, 1), (1, 1, 0), (1, 0, 1), (1, 1, 1)]
     possible_pert_list = []
 
-    for i in range(possible_pert.len):
-        for j in range(possible_pert.len):
-            for k in range(possible_pert.len):
-                for n in range(possible_pert.len):
+    for i in range(len(possible_pert)):
+        for j in range(len(possible_pert)):
+            for k in range(len(possible_pert)):
+                for n in range(len(possible_pert)):
                     possible_pert_list.append((possible_pert[i], possible_pert[j],
                                                possible_pert[k], possible_pert[n]))
 
@@ -260,9 +260,9 @@ def create_new_neighbors_pert(neighbor, num_square, curr_pert):
     curr_pert[num_square] = neighbor
     return curr_pert
 
+
 # change this for create only perturbation and current confidence queue
 def initialize_pixels_conf_queues(pert_img, curr_confidence):
-
     """
     Initialize two queue objects with initial pixel location, perturbation type and current confidence.
 
@@ -280,7 +280,6 @@ def initialize_pixels_conf_queues(pert_img, curr_confidence):
     tuple: A tuple containing two queue.Queue objects, each initialized with a tuple
            containing the pixel location, perturbation type and current confidence.
     """
-
 
     pert_queue = queue.Queue()
     pert_queue.put((pert_img, curr_confidence))
@@ -350,7 +349,7 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         bool: True if the condition is satisfied, False otherwise.
     """
 
-    #R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
+    # R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
     class RGB_per_squre:
         def __init__(self, row, col, img_x, min_rgb, max_rgb, mean_rgb):
             R, G, B = get_rgb(row, col, img_x)
@@ -361,7 +360,6 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         for y in range(0, 2):
             matrix_rgb = RGB_per_squre(x, y, img_x)
 
-
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
 
@@ -369,11 +367,11 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         counter = 0
         for x in range(0, 2):
             for y in range(0, 2):
-                if (cond_type == "MIN") && (matrix_rgb[x][y].min_rgb > value):
+                if (cond_type == "MIN") and (matrix_rgb[x][y].min_rgb > value):
                     counter += 1
-                elif(cond_type == "MAX") && (matrix_rgb[x][y].max_rgb > value):
+                elif (cond_type == "MAX") and (matrix_rgb[x][y].max_rgb > value):
                     counter += 1
-                elif (cond_type == "MEAN") && (matrix_rgb[x][y].mean_rgb > value):
+                elif (cond_type == "MEAN") and (matrix_rgb[x][y].mean_rgb > value):
                     counter += 1
 
         if counter >= 3:
@@ -383,31 +381,29 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         counter = 0
         for x in range(0, 2):
             for y in range(0, 2):
-                if (cond_type == "MIN") & & (matrix_rgb[x][y].min_rgb < value):
+                if (cond_type == "MIN") and (matrix_rgb[x][y].min_rgb < value):
                     counter += 1
-                elif (cond_type == "MAX") & & (matrix_rgb[x][y].max_rgb < value):
+                elif (cond_type == "MAX") and (matrix_rgb[x][y].max_rgb < value):
                     counter += 1
-                elif (cond_type == "MEAN") & & (matrix_rgb[x][y].mean_rgb < value):
+                elif (cond_type == "MEAN") and (matrix_rgb[x][y].mean_rgb < value):
                     counter += 1
 
         if counter >= 3:
             return True
 
-    if condition_type == "MIN" || condition_type == "MAX" ||  condition_type == "MEAN":
+    if condition_type == "MIN" or condition_type == "MAX" or condition_type == "MEAN":
         return bigger_than(condition_type, value) if comparison_operator == ">" else smaller_than(condition_type, value)
     elif condition_type == "SCORE_DIFF":
         return confidence_diff > value if comparison_operator == ">" else confidence_diff < value
 
 
 def get_intarvel(row, col, img_shape):
-    interval_x = range(row * (img_shape / 2), row * (img_shape / 2) + (img_shape / 2) - 1, 1)
-    interval_y = range(col * (img_shape / 2), col * (img_shape / 2) + (img_shape / 2) - 1, 1)
+    interval_x = range(row * int(img_shape / 2), row * int(img_shape / 2) + int(img_shape / 2) - 1, 1)
+    interval_y = range(col * int(img_shape / 2), col * int(img_shape / 2) + int(img_shape / 2) - 1, 1)
     return [interval_x, interval_y]
 
 
-
 def try_perturb_img(model, img_x, img_y, perturbation, device):
-
     """
     Try perturbing a pixel using the specified perturbation type and evaluate the impact on the model's prediction.
 
@@ -431,18 +427,20 @@ def try_perturb_img(model, img_x, img_y, perturbation, device):
     img_shape = img_x.shape[-1]
     # perturbation is tuple perturbation for 4 squares ((,,),(,,),(,,),(,,)) 
     for num_square in range(4):
-        pert = perturbation()
+        # pert = perturbation()
         for row in range(2):
             for col in range(2):
-                for c, pert in enumerate(perturbation[2^row+2^col]): # (0,1,0)
+                for c, pert in enumerate(perturbation[2 ^ row + 2 ^ col]):  # (0,1,0)
                     if pert == 0:
                         pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
                             pert_img[
-                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
+                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[
+                                    1]] - EPSILON
                     else:
                         pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
                             pert_img[
-                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
+                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[
+                                    1]] + EPSILON
 
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
@@ -579,6 +577,7 @@ def get_data_set(args, is_train=True):
             [transforms.ToTensor(),
              transforms.Normalize(mean=args.mean_norm, std=args.std_norm)])
         train_data = datasets.CIFAR10(root='./data', train=is_train, download=True, transform=transform)
+        print('after download cifar10')
     elif args.data_set == "imagenet":
         img_dim = 224
         if args.imagenet_dir is None:
@@ -673,6 +672,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
     Selects n images from a data loader such that a successful one pixel attack can be performed on the selected images.
 
     Args:
+        sorted_loc_list: done know
         num_synthesis_images (int): The number of images to select.
         true_label (int): The true label to be matched.
         data_loader (DataLoader): A PyTorch DataLoader object containing the image data.
@@ -687,6 +687,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
     Returns:
         list: A list of successful image indices.
     """
+    print('in select_n_images')
     model.to(device)
     successful_indices = []
 
@@ -699,35 +700,35 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
             if not is_correct_prediction(model, img_x, img_y) or img_y.item() != true_label:
                 continue
 
-            possible_loc_perturbations = create_sorted_loc_pert_list(img_x, lmh_dict)
-            possible_loc_perturbations.append("STOP")
+            #possible_loc_perturbations = create_sorted_loc_pert_list(img_x)
+            #possible_loc_perturbations.append("STOP")
             min_confidence_dict = {}
 
-            for loc_perturbation in possible_loc_perturbations:
-                if is_success:
-                    break
+            # for loc_perturbation in possible_loc_perturbations:
+            #     if is_success:
+            #         break
 
-                if loc_perturbation == "STOP":
-                    # sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
+                # if loc_perturbation == "STOP":
+                    # # sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
+                    #
+                    # # Try perturbing the pixels with finer granularity
+                    # for loc_idx in range(max_g):
+                    #     if g <= 0:
+                    #         break
+                    #
+                    #     is_success, queries, curr_confidence = try_perturb_pixel_finer_granularity(
+                    #         sorted_loc_list[loc_idx][0][0],
+                    #         sorted_loc_list[loc_idx][0][1],
+                    #         model, img_x, img_y, g, mean_norm, std_norm, device)
 
-                    # Try perturbing the pixels with finer granularity
-                    for loc_idx in range(max_g):
-                        if g <= 0:
-                            break
-
-                        is_success, queries, curr_confidence = try_perturb_pixel_finer_granularity(
-                            sorted_loc_list[loc_idx][0][0],
-                            sorted_loc_list[loc_idx][0][1],
-                            model, img_x, img_y, g, mean_norm, std_norm, device)
-
-                    continue
+                    # continue
 
                 # x, y = loc_perturbation[0]
                 pert_type = loc_perturbation
                 # is_success, queries, curr_confidence = try_perturb_pixel(x, y, model, img_x, img_y, pert_type,\
                 #                                                          lmh_dict, device)
-                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_type, \
-                                                                       lmh_dict, device)
+                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_type, device)
+
                 # update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence)
 
             if is_success:
@@ -765,7 +766,6 @@ def update_results_df(results_df, results_path, batch_idx, class_idx, is_success
     results_df.to_csv(f"{results_path[2:]}/class_{class_idx}.csv")
 
     return results_df
-
 
 # def try_perturb_few_pixels(max_k, few_pixel_list, model, img_x, img_y, curr_n_queries, max_queries, lmh_dict, device):
 #     """

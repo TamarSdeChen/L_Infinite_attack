@@ -213,6 +213,7 @@ def synthesize(args):
     # Set up device(s)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     devices = setup_devices()
+    print(device)
 
     # Load train data
     train_data, img_dim = get_data_set(args)
@@ -241,10 +242,12 @@ def synthesize(args):
         print("########################")
 
         # Select a subset of images from the class
-        train_imgs_idx = select_n_images(args.num_train_images, class_idx, train_loader, model, args.max_g, args.g, \
+        train_imgs_idx = select_n_images(args.num_train_images, class_idx, train_loader, model, args.max_g, args.g,
                                          lmh_dict, args.mean_norm, args.std_norm, device)
+        print('after select_n_images')
         n_train_data = torch.utils.data.Subset(train_data, train_imgs_idx)
         data_loader = torch.utils.data.DataLoader(n_train_data, shuffle=False, batch_size=1)
+
 
         # Initialize the best program and its query count
         best_program = program_.Program(img_dim)
@@ -308,8 +311,8 @@ if __name__ == '__main__':
                         help='Model architecture to use (e.g., vgg16, resnet18, etc.)')
     parser.add_argument('--data_set', default='cifar10', type=str, choices=['cifar10', 'imagenet'],
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
-    parser.add_argument('--classes_list', metavar='N', type=int, nargs='+', help='List of classes for the synthesis')
-    parser.add_argument('--num_train_images', default=50, type=int, help='# of images in the training set per class')
+    parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int, nargs='+', help='List of classes for the synthesis')
+    parser.add_argument('--num_train_images', default=1, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
     parser.add_argument('--max_iter', default=210, type=int, help='Maximum # of iterations for the MH algorithm')
     parser.add_argument('--num_iter_stop', default=60, type=int,
@@ -322,5 +325,7 @@ if __name__ == '__main__':
     parser.add_argument('--std_norm', metavar='N', type=float, nargs='+', default=[1.0, 1.0, 1.0], \
                         help='List of standard deviation values for each channel used in image normalization. Default is [1.0, 1.0, 1.0]')
 
+    print('hi')
     args = parser.parse_args()
+    print(args)
     synthesize(args)
