@@ -13,7 +13,7 @@ from CIFAR10_models.googlenet import GoogLeNet
 from torchvision.models import resnet50, densenet121
 from tqdm import tqdm
 
-EPSILON = 8 / 256
+EPSILON = 0.5
 
 
 def setup_devices():
@@ -192,8 +192,8 @@ def create_sorted_pert_list(img_x):
         for j in range(len(possible_pert)):
             for k in range(len(possible_pert)):
                 for n in range(len(possible_pert)):
-                    possible_pert_list.append((possible_pert[i], possible_pert[j],
-                                               possible_pert[k], possible_pert[n]))
+                    possible_pert_list.append([possible_pert[i], possible_pert[j],
+                                               possible_pert[k], possible_pert[n]])
 
     return possible_pert_list
 
@@ -322,7 +322,7 @@ def update_min_confidence_dict(min_confidence_dict, permutation, curr_confidence
 
 def get_rgb(row, col, img_x):
     img_shape = img_x.shape[-1]
-    size_square = img_shape / 2
+    size_square = int(img_shape / 2)
     rgb = []
     for c in range(3):
         rgb.append(torch.mean(img_x[0, c, size_square * row:(size_square * row + size_square - 1),
@@ -346,28 +346,27 @@ def check_cond(cond, img_x, orig_confidence, confidence):
     """
 
     # R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
-    class RGB_per_squre:
-        def __init__(self, row, col, img_x, min_rgb, max_rgb, mean_rgb):
-            R, G, B = get_rgb(row, col, img_x)
-            self.min_rgb, self.max_rgb, self.mean_rgb = min(R, G, B), max(R, G, B), (R + G + B) / 3
+    def RGB_per_squre(row, col, img_x):
+        R, G, B = get_rgb(row, col, img_x)
+        return list((min(R, G, B), max(R, G, B), ((R + G + B) / 3)))
 
-    matrix_rgb = np.zeros((2, 2))
+    matrix_rgb = [[0,0],[0,0]]
     for x in range(0, 2):
         for y in range(0, 2):
-            matrix_rgb = RGB_per_squre(x, y, img_x)
+            matrix_rgb[x][y] = RGB_per_squre(x, y, img_x)
 
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
-
+    print(matrix_rgb)
     def bigger_than(cond_type, value):
         counter = 0
         for x in range(0, 2):
             for y in range(0, 2):
-                if (cond_type == "MIN") and (matrix_rgb[x][y].min_rgb > value):
+                if (cond_type == "MIN") and (matrix_rgb[x][y][0] > value):
                     counter += 1
-                elif (cond_type == "MAX") and (matrix_rgb[x][y].max_rgb > value):
+                elif (cond_type == "MAX") and (matrix_rgb[x][y][1] > value):
                     counter += 1
-                elif (cond_type == "MEAN") and (matrix_rgb[x][y].mean_rgb > value):
+                elif (cond_type == "MEAN") and (matrix_rgb[x][y][2] > value):
                     counter += 1
 
         if counter >= 3:
@@ -377,11 +376,11 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         counter = 0
         for x in range(0, 2):
             for y in range(0, 2):
-                if (cond_type == "MIN") and (matrix_rgb[x][y].min_rgb < value):
+                if (cond_type == "MIN") and (matrix_rgb[x][y][0] < value):
                     counter += 1
-                elif (cond_type == "MAX") and (matrix_rgb[x][y].max_rgb < value):
+                elif (cond_type == "MAX") and (matrix_rgb[x][y][1] < value):
                     counter += 1
-                elif (cond_type == "MEAN") and (matrix_rgb[x][y].mean_rgb < value):
+                elif (cond_type == "MEAN") and (matrix_rgb[x][y][2] < value):
                     counter += 1
 
         if counter >= 3:
@@ -426,30 +425,26 @@ def try_perturb_img(model, img_x, img_y, perturbation, device):
         # pert = perturbation()
         for row in range(2):
             for col in range(2):
-                for c, pert in enumerate(perturbation[2 ^ row + 2 ^ col]):  # (0,1,0)
+                for c, pert in enumerate(perturbation[2 * row + 1 * col]):  # (0,1,0)
                     if pert == 0:
                         pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
-                            pert_img[
-                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[
-                                    1]] - EPSILON
+                            pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
+
                     else:
                         pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
-                            pert_img[
-                                0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[
-                                    1]] + EPSILON
-
+                            pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
+    pert_img[pert_img < 0] = 0
+    pert_img[pert_img > 1] = 1
     # for c, pert in enumerate(pert_type):
     #     if pert == "MIN":
     #         pert_img[0, c, x, y] = lmh_dict['min_values'][c]
     #     else:
     #         pert_img[0, c, x, y] = lmh_dict['max_values'][c]
-
     n_queries_pert += 1
     softmax = nn.Softmax(dim=1)
     predictions_vector = softmax(model(pert_img).data)
     pred = torch.argmax(predictions_vector)
     confidence = predictions_vector[0][img_y.item()].to(device)
-
     if pred.item() != img_y.item():
         return True, n_queries_pert, confidence
 

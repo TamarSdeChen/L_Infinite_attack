@@ -9,8 +9,7 @@ from torch.utils.data import DataLoader
 from metropolis_hastings import run_MH
 from utils import *
 
-
-def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
+def run_program(program, model, dataloader, img_dim, center_matrix,max_queries, mean_norm,
                 std_norm, device, is_test=False, class_idx=None, results_path=None, max_k=1):
     """
     Run the specified program for adversarial attacks on a given model using the provided dataloader.
@@ -38,7 +37,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
     """
     model = model.to(device)
     model.eval()
-    # center_matrix = center_matrix.to(device)
+    center_matrix = center_matrix.to(device)
 
     pert_img_to_idx_dict = create_pert_type_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
 
@@ -109,7 +108,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
             if is_success:
                 sum_queries += n_queries
                 break
-            update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
+            #update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
             # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
             if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
@@ -160,7 +159,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
                                                                                      device)
                                     # indicators_tensor[pert_img_to_idx_dict[new_pert_img]][new_x][new_y] = 1
 
-                                    update_min_confidence_dict(min_prob_dict, closest_pert, curr_prob)
+                                    #update_min_confidence_dict(min_prob_dict, closest_pert, curr_prob)
                                     # few_pixel_list.append([(new_x, new_y), new_pert_img, curr_prob.item()]) # we currently dont have it
                                     n_queries += queries
 
@@ -251,8 +250,9 @@ def synthesize(args):
 
         # Initialize the best program and its query count
         best_program = program_.Program(img_dim)
-        best_queries = run_program(best_program, model, data_loader, img_dim, center_matrix, args.max_g, args.g, \
-                                   args.max_queries, lmh_dict, args.mean_norm, args.std_norm, device)
+
+        best_queries = run_program(best_program, model, data_loader, img_dim, center_matrix, \
+                                   args.max_queries, args.mean_norm, args.std_norm, device)
         previous_best_queries = None
         num_same_best_queries_iter = 1
 
@@ -312,7 +312,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_set', default='cifar10', type=str, choices=['cifar10', 'imagenet'],
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
     parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int, nargs='+', help='List of classes for the synthesis')
-    parser.add_argument('--num_train_images', default=1, type=int, help='# of images in the training set per class')
+    parser.add_argument('--num_train_images', default=5, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
     parser.add_argument('--max_iter', default=210, type=int, help='Maximum # of iterations for the MH algorithm')
     parser.add_argument('--num_iter_stop', default=60, type=int,
