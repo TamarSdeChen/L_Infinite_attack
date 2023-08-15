@@ -40,14 +40,14 @@ def mutate_condition_type(program, img_dim, idx):
     """
     cond = getattr(program, 'cond_{}'.format(idx))
     old_cond_type = cond[0]
-    cond_type = random.choice(["MIN", "MAX", "MEAN", "SCORE_DIFF", "CENTER"])
+    cond_type = random.choice(["MIN", "MAX", "MEAN", "SCORE_DIFF"])
     cond[0] = cond_type
     if cond_type not in ["MIN", "MAX", "MEAN"] or old_cond_type not in ["MIN", "MAX", "MEAN"]:
         cond[2] = generate_real_value(cond_type, img_dim)
     setattr(program, 'cond_{}'.format(idx), cond)
 
 
-def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix, max_iter, queue_proc, max_g, g,\
+def run_MH(init_program, init_queries, model, dataloader, img_dim, max_iter, queue_proc, max_g, g,\
            max_queries, lmh_dict, mean_norm, std_norm, device):
     """
     Perform Metropolis-Hastings algorithm for program optimization.
@@ -62,7 +62,6 @@ def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix
         model (torch.nn.Module): The neural network model used for evaluation.
         dataloader (torch.utils.data.DataLoader): The data loader for input data.
         img_dim (int): An integer representing the image dimension.
-        center_matrix (torch.Tensor): A matrix representing the distance of each pixel to the image center.
         max_iter (int): The maximum number of iterations for the Metropolis-Hastings algorithm.
         queue_proc (multiprocessing.Queue): A queue for inter-process communication, used to store results.
         max_g (int): The maximum number of pixels to perturb with finer granularity.
@@ -102,7 +101,7 @@ def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix
                     mut_func(program, img_dim, idx_mutate - scale)
                     break
 
-        queries = run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, max_queries, lmh_dict,
+        queries = run_program(program, model, dataloader, img_dim, max_g, g, max_queries, lmh_dict,
                               mean_norm, std_norm, device)
         score = math.e ** (-beta * (queries))
         if score == 0 or best_score == 0:
