@@ -663,12 +663,11 @@ def write_program_results(args, class_idx, best_program, best_queries):
 
 
 def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g, g, lmh_dict, mean_norm, std_norm,
-                    device, sorted_loc_list=None):
+                    device):
     """
     Selects n images from a data loader such that a successful one pixel attack can be performed on the selected images.
 
     Args:
-        sorted_loc_list: done know
         num_synthesis_images (int): The number of images to select.
         true_label (int): The true label to be matched.
         data_loader (DataLoader): A PyTorch DataLoader object containing the image data.
@@ -683,7 +682,6 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
     Returns:
         list: A list of successful image indices.
     """
-    print('in select_n_images')
     model.to(device)
     successful_indices = []
 
@@ -695,19 +693,21 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
 
             if not is_correct_prediction(model, img_x, img_y) or img_y.item() != true_label:
                 continue
+            
+            # got here if we found correctly classified image 
+            possible_perturbations = create_sorted_loc_pert_list(img_x)  # create a basic list L with all possible
+            # perturbations, each item is ((),(),(),())
+            possible_perturbations.append("STOP")
+            # min_confidence_dict = {}
 
-            #possible_loc_perturbations = create_sorted_loc_pert_list(img_x)
-            #possible_loc_perturbations.append("STOP")
-            min_confidence_dict = {}
+            for pert_img in possible_perturbations:  # perturbation is a ((),(),(),())
+                if is_success:
+                    break
 
-            # for loc_perturbation in possible_loc_perturbations:
-            #     if is_success:
-            #         break
+                if pert_img == "STOP":
+                    # sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
 
-                # if loc_perturbation == "STOP":
-                    # # sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
-                    #
-                    # # Try perturbing the pixels with finer granularity
+                    # Try perturbing the pixels with finer granularity
                     # for loc_idx in range(max_g):
                     #     if g <= 0:
                     #         break
@@ -717,15 +717,9 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                     #         sorted_loc_list[loc_idx][0][1],
                     #         model, img_x, img_y, g, mean_norm, std_norm, device)
 
-                    # continue
+                    continue
+                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_img, device)
 
-                # x, y = loc_perturbation[0]
-                pert_type = loc_perturbation
-                # is_success, queries, curr_confidence = try_perturb_pixel(x, y, model, img_x, img_y, pert_type,\
-                #                                                          lmh_dict, device)
-                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_type, device)
-
-                # update_min_confidence_dict(min_confidence_dict, x, y, curr_confidence)
 
             if is_success:
                 successful_indices.append(batch_idx)
