@@ -44,9 +44,7 @@ def generate_real_value(cond_type, img_dim):
     Returns:
         float: A real value generated based on the given condition type and image dimension.
     """
-    if cond_type == "CENTER":
-        real_value = random.randint(1, (img_dim // 2) - 1)
-    elif cond_type == "SCORE_DIFF":
+    if cond_type == "SCORE_DIFF":
         real_value = random.uniform(-0.02, 0.3)
     else:
         real_value = random.random()
@@ -94,7 +92,7 @@ def generate_random_condition(img_dim):
         list: A list containing the randomly generated condition type (str), comparison operator (str),
             and real value (float).
     """
-    cond_type = random.choice(["MIN", "MAX", "MEAN", "SCORE_DIFF", "CENTER"])
+    cond_type = random.choice(["MIN", "MAX", "MEAN", "SCORE_DIFF"])
     comparison_operator = random.choice([">", "<"])
 
     if cond_type == "SCORE_DIFF":
@@ -164,9 +162,9 @@ def argsort(seq):
 #     return pixel_pert_dict
 
 
-def create_sorted_loc_pert_list(img_x):
+def create_sorted_pert_list(img_x):
     """
-    Create a sorted list of pixel locations and perturbation types based on the difference of the perturbation type
+    Create a sorted list of pixel perturbation types based on the difference of the perturbation type
     from the original pixel as the primary key and the distance from the center as a secondary key.
 
     Args:
@@ -339,8 +337,6 @@ def check_cond(cond, img_x, orig_confidence, confidence):
     Args:
         cond (tuple): A tuple containing the condition to be checked.
         img_x (torch.Tensor): The input image tensor.
-        x (int): The x-coordinate of the pixel.
-        y (int): The y-coordinate of the pixel.
         orig_confidence (torch.Tensor): The original confidence of the true class.
         confidence (torch.Tensor): The confidence of the true class after perturbation.
         center_matrix (torch.Tensor): A matrix representing the distance of each pixel to the image center.
@@ -661,8 +657,8 @@ def write_program_results(args, class_idx, best_program, best_queries):
         f.write(f"class: {class_idx}\n")
         f.write(f"cond 1: {best_program.cond_1}\n")
         f.write(f"cond 2: {best_program.cond_2}\n")
-        f.write(f"cond 3: {best_program.cond_3}\n")
-        f.write(f"cond 4: {best_program.cond_4}\n")
+        # f.write(f"cond 3: {best_program.cond_3}\n")
+        # f.write(f"cond 4: {best_program.cond_4}\n")
         f.write(f"average number of queries on training set: {best_queries}\n\n")
 
 

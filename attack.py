@@ -41,7 +41,7 @@ def attack(args):
     program_dict = pickle.load(open(args.program_path, 'rb'))
 
     # Generate center matrix
-    center_matrix = generate_center_matrix(img_dim)
+    #center_matrix = generate_center_matrix(img_dim)
 
     #Create low_mid_high_values dict
     lmh_dict = create_low_mid_high_values_dict(args.mean_norm, args.std_norm)
@@ -56,7 +56,7 @@ def attack(args):
     available_devices = tmp.Queue()
     for i in range(num_gpus):
         available_devices.put(f"cuda:{i}")
-    task_list = [(i, program_dict[args.classes_list[i]], model, test_loader, img_dim, center_matrix, args.max_g, \
+    task_list = [(i, program_dict[args.classes_list[i]], model, test_loader, img_dim, args.max_g, \
          args.g, args.max_queries, lmh_dict, args.mean_norm, args.std_norm, devices[i % num_gpus], True,\
                   args.classes_list[i], args.results_path, args.max_k) for i in range(num_classes)]
 

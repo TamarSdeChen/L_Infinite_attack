@@ -58,7 +58,7 @@ def run_program(program, model, dataloader, img_dim, max_queries, mean_norm,
         if not is_correct_prediction(model, img_x, img_y):
             continue
         num_imgs += 1
-        possible_loc_pert_list = create_sorted_loc_pert_list(img_x)  # for now - it returns basic LIST not sorted!
+        possible_loc_pert_list = create_sorted_pert_list(img_x)  # for now - it returns basic LIST not sorted!
         # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
         # indicators_tensor = torch.zeros((8, img_dim, img_dim))
