@@ -695,7 +695,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                 continue
             
             # got here if we found correctly classified image 
-            possible_perturbations = create_sorted_loc_pert_list(img_x)  # create a basic list L with all possible
+            possible_perturbations = create_sorted_pert_list(img_x)  # create a basic list L with all possible
             # perturbations, each item is ((),(),(),())
             possible_perturbations.append("STOP")
             # min_confidence_dict = {}
