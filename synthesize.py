@@ -9,7 +9,8 @@ from torch.utils.data import DataLoader
 from metropolis_hastings import run_MH
 from utils import *
 
-def run_program(program, model, dataloader, img_dim, center_matrix,max_queries, mean_norm,
+
+def run_program(program, model, dataloader, img_dim, center_matrix, max_queries, mean_norm,
                 std_norm, device, is_test=False, class_idx=None, results_path=None, max_k=1):
     """
     Run the specified program for adversarial attacks on a given model using the provided dataloader.
@@ -108,7 +109,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix,max_queries, 
             if is_success:
                 sum_queries += n_queries
                 break
-            #update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
+            # update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
             # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
             if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
@@ -124,49 +125,46 @@ def run_program(program, model, dataloader, img_dim, center_matrix,max_queries, 
                         possible_loc_pert_list.append(possible_loc_pert_list. \
                                                       pop(possible_loc_pert_list.index(closest_pert)))
             # end new code
+
             pert_queue = initialize_pixels_conf_queues(pert_img, curr_prob)  # pert_img is a
             # perturbation contain 4 tuples
             while (not pert_queue.empty()) and not is_success:
                 if n_queries >= max_queries and is_test:
                     break
 
-                while (not pert_queue.empty()) and (not is_success):
-                    pert_prob = pert_queue.get()  # this queue contains square perturbation
-                    curr_pert = pert_prob[0]
-                    curr_prob = pert_prob[1]
-                    # change to Queue of perturbation only !!
+                pert_prob = pert_queue.get()  # this queue contains square perturbation
+                curr_pert = pert_prob[0]
+                curr_prob = pert_prob[1]
+                # change to Queue of perturbation only !!
 
-                    if check_cond(program.cond_4, img_x, orig_prob, curr_prob):
+                if check_cond(program.cond_4, img_x, orig_prob, curr_prob):
 
-                        for num_square in range(4):  # currently we have 4 squares for 1 image
-                            square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
-                            pert_idx = pert_img_to_idx_dict[square_pert]
-                            curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
-                            # go over closest perturbation
-                            for neighbor in curr_pert_neighbors_list:
-                                # remove from all possible perturbation list
-                                closest_pert = create_new_neighbors_pert(neighbor, num_square, curr_pert)  # this is a
-                                # tuple of 4 tuple
-                                possible_loc_pert_list.pop(possible_loc_pert_list.index(closest_pert))
-                                if closest_pert is not None:
-                                    # maybe add indicators matrix that indicate on repeats
-                                    # if indicators_tensor[pert_img_to_idx_dict[new_pert_img]][new_x][new_y] > 0:
-                                    #     continue
-                                    if n_queries >= max_queries and is_test:
-                                        break
+                    for num_square in range(4):  # currently we have 4 squares for 1 image
+                        square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
+                        pert_idx = pert_img_to_idx_dict[square_pert]
+                        curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
+                        # go over closest perturbation
+                        for neighbor in curr_pert_neighbors_list:
+                            # remove from all possible perturbation list
+                            closest_pert = create_new_neighbors_pert(neighbor, num_square, curr_pert)
+                            try:
+                                indicator_idx = possible_loc_pert_list.index(closest_pert)
+                            except:
+                                print('got here')
+                                continue
 
-                                    is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, closest_pert,
-                                                                                     device)
-                                    # indicators_tensor[pert_img_to_idx_dict[new_pert_img]][new_x][new_y] = 1
+                            possible_loc_pert_list.pop(indicator_idx)
+                            print(len(possible_loc_pert_list))
 
-                                    #update_min_confidence_dict(min_prob_dict, closest_pert, curr_prob)
-                                    # few_pixel_list.append([(new_x, new_y), new_pert_img, curr_prob.item()]) # we currently dont have it
-                                    n_queries += queries
-
-                                    pert_queue.put((closest_pert, curr_prob))
-                                    if is_success:
-                                        sum_queries += n_queries
-                                        break
+                            if n_queries >= max_queries and is_test:
+                                break
+                            is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, closest_pert,
+                                                                             device)
+                            n_queries += queries
+                            pert_queue.put((closest_pert, curr_prob))
+                            if is_success:
+                                sum_queries += n_queries
+                                break
 
         if is_success:
             num_success += 1
@@ -247,7 +245,6 @@ def synthesize(args):
         n_train_data = torch.utils.data.Subset(train_data, train_imgs_idx)
         data_loader = torch.utils.data.DataLoader(n_train_data, shuffle=False, batch_size=1)
 
-
         # Initialize the best program and its query count
         best_program = program_.Program(img_dim)
 
@@ -311,7 +308,8 @@ if __name__ == '__main__':
                         help='Model architecture to use (e.g., vgg16, resnet18, etc.)')
     parser.add_argument('--data_set', default='cifar10', type=str, choices=['cifar10', 'imagenet'],
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
-    parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int, nargs='+', help='List of classes for the synthesis')
+    parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int,
+                        nargs='+', help='List of classes for the synthesis')
     parser.add_argument('--num_train_images', default=5, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
     parser.add_argument('--max_iter', default=210, type=int, help='Maximum # of iterations for the MH algorithm')

@@ -357,7 +357,7 @@ def check_cond(cond, img_x, orig_confidence, confidence):
 
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
-    print(matrix_rgb)
+
     def bigger_than(cond_type, value):
         counter = 0
         for x in range(0, 2):
@@ -650,10 +650,10 @@ def write_program_results(args, class_idx, best_program, best_queries):
     """
     with open(f"{args.model}_{args.data_set}.txt", 'a+') as f:
         f.write(f"class: {class_idx}\n")
-        f.write(f"cond 1: {best_program.cond_1}\n")
+        # f.write(f"cond 1: {best_program.cond_1}\n")
         f.write(f"cond 2: {best_program.cond_2}\n")
         # f.write(f"cond 3: {best_program.cond_3}\n")
-        # f.write(f"cond 4: {best_program.cond_4}\n")
+        f.write(f"cond 4: {best_program.cond_4}\n")
         f.write(f"average number of queries on training set: {best_queries}\n\n")
 
 
