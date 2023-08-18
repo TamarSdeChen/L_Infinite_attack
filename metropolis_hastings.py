@@ -47,7 +47,7 @@ def mutate_condition_type(program, img_dim, idx):
     setattr(program, 'cond_{}'.format(idx), cond)
 
 
-def run_MH(init_program, init_queries, model, dataloader, img_dim, max_iter, queue_proc, max_g, g,\
+def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix, max_iter, queue_proc, max_g, g,\
            max_queries, lmh_dict, mean_norm, std_norm, device):
     """
     Perform Metropolis-Hastings algorithm for program optimization.
@@ -83,17 +83,17 @@ def run_MH(init_program, init_queries, model, dataloader, img_dim, max_iter, que
     best_queries = init_queries
     best_score = math.e ** (-beta * (best_queries))
     mutation_functions = [
-        (range(1, 5), 0, mutate_condition),
-        (range(5, 9), 4, mutate_real_value),
-        (range(9, 13), 8, mutate_condition_type),
+        (range(1, 3), 0, mutate_condition),
+        (range(3, 5), 2, mutate_real_value),
+        (range(5, 7), 4, mutate_condition_type),
     ]
 
     for iter_idx in range(max_iter):
         program = copy.deepcopy(best_program)
-        idx_mutate = random.randrange(13)
+        idx_mutate = random.randrange(7)
 
         if idx_mutate == 0:
-            for idx in range(1, 5):
+            for idx in range(1, 3):
                 setattr(program, 'cond_{}'.format(idx), generate_random_condition(img_dim))
         else:
             for idx_range, scale, mut_func in mutation_functions:
@@ -101,7 +101,7 @@ def run_MH(init_program, init_queries, model, dataloader, img_dim, max_iter, que
                     mut_func(program, img_dim, idx_mutate - scale)
                     break
 
-        queries = run_program(program, model, dataloader, img_dim, max_g, g, max_queries, lmh_dict,
+        queries = run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, max_queries, lmh_dict,
                               mean_norm, std_norm, device)
         score = math.e ** (-beta * (queries))
         if score == 0 or best_score == 0:

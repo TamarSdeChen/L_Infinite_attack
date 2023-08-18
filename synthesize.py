@@ -112,7 +112,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
             # update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
             # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
-            if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
+            if check_cond(program.cond_1, img_x, orig_prob, curr_prob):
                 for num_square in range(4):  # currently we have 4 squares for 1 image
                     square_pert = pert_img[num_square]  # this is a tuple (-,-,-)
 
@@ -137,7 +137,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                 curr_prob = pert_prob[1]
                 # change to Queue of perturbation only !!
 
-                if check_cond(program.cond_4, img_x, orig_prob, curr_prob):
+                if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
 
                     for num_square in range(4):  # currently we have 4 squares for 1 image
                         square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
@@ -150,11 +150,11 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                             try:
                                 indicator_idx = possible_loc_pert_list.index(closest_pert)
                             except:
-                                print('got here')
+                                # print('got here')
                                 continue
 
                             possible_loc_pert_list.pop(indicator_idx)
-                            print(len(possible_loc_pert_list))
+                            # print(len(possible_loc_pert_list))
 
                             if n_queries >= max_queries and is_test:
                                 break
@@ -310,7 +310,7 @@ if __name__ == '__main__':
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
     parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int,
                         nargs='+', help='List of classes for the synthesis')
-    parser.add_argument('--num_train_images', default=5, type=int, help='# of images in the training set per class')
+    parser.add_argument('--num_train_images', default=10, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
     parser.add_argument('--max_iter', default=210, type=int, help='Maximum # of iterations for the MH algorithm')
     parser.add_argument('--num_iter_stop', default=60, type=int,
