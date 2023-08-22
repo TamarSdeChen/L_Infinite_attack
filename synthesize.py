@@ -250,6 +250,7 @@ def synthesize(args):
 
         best_queries = run_program(best_program, model, data_loader, img_dim, center_matrix, \
                                    args.max_queries, args.mean_norm, args.std_norm, device)
+        print("after run program")
         previous_best_queries = None
         num_same_best_queries_iter = 1
 
@@ -277,7 +278,7 @@ def synthesize(args):
                 queue_proc = tmp.Manager().Queue()
                 ctx = tmp.get_context('spawn')
                 processes = []
-
+                print("\nafter get context")
                 # Create processes for each device
                 for device_ in devices:
                     processes.append(ctx.Process(target=run_MH, \

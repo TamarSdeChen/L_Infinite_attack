@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OPPSLA attack')
     parser.add_argument('--model', default='resnet18', type=str, help='model')
     parser.add_argument('--data_set', default='cifar10', type=str, help='data set - must be CIFAR-10 or ImageNet')
-    parser.add_argument('--classes_list', metavar='N', type=int, nargs='+', help='classes for the synthesis process')
+    parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int, nargs='+', help='classes for the synthesis process')
     parser.add_argument('--imagenet_dir', type=str, help='directory for images of ImageNet dataset')
     parser.add_argument('--program_path', type=str, help='path of the program as a pkl file')
     parser.add_argument('--results_path', default="./results_OPPSLA", type=str, help='path of the saved results')

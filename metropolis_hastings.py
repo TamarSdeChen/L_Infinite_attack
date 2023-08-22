@@ -101,7 +101,7 @@ def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix
                     mut_func(program, img_dim, idx_mutate - scale)
                     break
 
-        queries = run_program(program, model, dataloader, img_dim, center_matrix, max_g, g, max_queries, lmh_dict,
+        queries = run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                               mean_norm, std_norm, device)
         score = math.e ** (-beta * (queries))
         if score == 0 or best_score == 0:
