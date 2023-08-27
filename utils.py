@@ -13,8 +13,7 @@ from CIFAR10_models.googlenet import GoogLeNet
 from torchvision.models import resnet50, densenet121
 from tqdm import tqdm
 
-EPSILON = 0.5
-
+EPSILON = 8/256
 
 def setup_devices():
     """
@@ -650,10 +649,10 @@ def write_program_results(args, class_idx, best_program, best_queries):
     """
     with open(f"{args.model}_{args.data_set}.txt", 'a+') as f:
         f.write(f"class: {class_idx}\n")
-        # f.write(f"cond 1: {best_program.cond_1}\n")
+        f.write(f"cond 1: {best_program.cond_1}\n")
         f.write(f"cond 2: {best_program.cond_2}\n")
         # f.write(f"cond 3: {best_program.cond_3}\n")
-        f.write(f"cond 4: {best_program.cond_4}\n")
+        # f.write(f"cond 4: {best_program.cond_4}\n")
         f.write(f"average number of queries on training set: {best_queries}\n\n")
 
 
