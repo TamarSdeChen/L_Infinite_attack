@@ -1,4 +1,4 @@
-from synthesize import generate_random_condition
+from utils import generate_random_condition
 
 class Program:
     def __init__(self, img_dim):

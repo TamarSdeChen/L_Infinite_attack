@@ -12,6 +12,7 @@ from CIFAR10_models.resnet import resnet18
 from CIFAR10_models.googlenet import GoogLeNet
 from torchvision.models import resnet50, densenet121
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 EPSILON = 8/256
 
@@ -392,9 +393,11 @@ def check_cond(cond, img_x, orig_confidence, confidence):
 
 
 def get_intarvel(row, col, img_shape):
-    interval_x = range(row * int(img_shape / 2), row * int(img_shape / 2) + int(img_shape / 2) - 1, 1)
-    interval_y = range(col * int(img_shape / 2), col * int(img_shape / 2) + int(img_shape / 2) - 1, 1)
-    return [interval_x, interval_y]
+    interval_x_start = row * int(img_shape / 2)
+    interval_x_end = row * int(img_shape / 2) + int(img_shape / 2)
+    interval_y_start = col * int(img_shape / 2)
+    interval_y_end = col * int(img_shape / 2) + int(img_shape / 2)
+    return [interval_x_start, interval_x_end, interval_y_start, interval_y_end]
 
 
 def try_perturb_img(model, img_x, img_y, perturbation, device):
@@ -424,14 +427,15 @@ def try_perturb_img(model, img_x, img_y, perturbation, device):
         # pert = perturbation()
         for row in range(2):
             for col in range(2):
+                output = get_intarvel(row, col, img_shape)
                 for c, pert in enumerate(perturbation[2 * row + 1 * col]):  # (0,1,0)
                     if pert == 0:
-                        pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
-                            pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] - EPSILON
+                        pert_img[0, c, output[0]:output[1], output[2]:output[3]] = \
+                            pert_img[0, c, output[0]:output[1], output[2]:output[3]] - EPSILON
 
                     else:
-                        pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] = \
-                            pert_img[0, c, get_intarvel(row, col, img_shape)[0], get_intarvel(row, col, img_shape)[1]] + EPSILON
+                        pert_img[0, c, output[0]:output[1], output[2]:output[3]] = \
+                            pert_img[0, c, output[0]:output[1], output[2]:output[3]] + EPSILON
     pert_img[pert_img < 0] = 0
     pert_img[pert_img > 1] = 1
     # for c, pert in enumerate(pert_type):
@@ -723,7 +727,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                     return successful_indices
 
 
-def update_results_df(results_df, results_path, batch_idx, class_idx, is_success, n_queries, n_perturbed_pixels):
+def update_results_df(results_df, results_path, batch_idx, class_idx, is_success, n_queries, pert_img):
     """
     Update the results DataFrame with the current batch's success status and queries, and save it to a CSV file.
 
@@ -734,7 +738,7 @@ def update_results_df(results_df, results_path, batch_idx, class_idx, is_success
         class_idx (int): Index of the current class.
         is_success (bool): Whether the current batch was successful or not.
         n_queries (int): Number of queries for the current batch.
-        n_perturbed_pixels(int): Number of perturbed pixels.
+        pert_img(int): tuple of the perturbation.
 
     Returns:
         pd.DataFrame: Updated results DataFrame.
@@ -744,9 +748,9 @@ def update_results_df(results_df, results_path, batch_idx, class_idx, is_success
         "class": class_idx,
         "is_success": is_success,
         "queries": n_queries if is_success else -1,
-        "number of perturbed pixels": n_perturbed_pixels if is_success else -1
+        "pert_img": pert_img if is_success else -1
     }
-    results_df = results_df.append(result_row, ignore_index=True)
+    results_df = results_df._append(result_row, ignore_index=True)
     results_df.to_csv(f"{results_path[2:]}/class_{class_idx}.csv")
 
     return results_df

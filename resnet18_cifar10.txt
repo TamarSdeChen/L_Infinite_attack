@@ -1,52 +1,7 @@
 data set: cifar10
 number of training images: 10
-class: 0
-cond 1: ['MEAN', '>', 0.40707959166923346]
-cond 2: ['MEAN', '<', 0.19886658502449317]
-average number of queries on training set: 84.0
-
 class: 1
-cond 1: ['SCORE_DIFF', '<', 0.2609144769698969]
-cond 2: ['MEAN', '>', 0.589730562490103]
-average number of queries on training set: 111.22222222222223
-
-class: 2
-cond 1: ['MIN', '>', 0.19167723049000762]
-cond 2: ['MEAN', '<', 0.15862050863580934]
-average number of queries on training set: 182.4
-
-class: 3
-cond 1: ['SCORE_DIFF', '<', 0.2397955435022062]
-cond 2: ['MIN', '>', 0.40862522396268375]
-average number of queries on training set: 115.5
-
-class: 4
-cond 1: ['SCORE_DIFF', '<', 0.08406812094869856]
-cond 2: ['MAX', '>', 0.8829905402056449]
-average number of queries on training set: 105.5
-
-class: 5
-cond 1: ['SCORE_DIFF', '<', 0.05611655662426304]
-cond 2: ['MIN', '>', 0.6612270886982577]
-average number of queries on training set: 337.44444444444446
-
-class: 6
-cond 1: ['SCORE_DIFF', '<', 0.25809350593578306]
-cond 2: ['MAX', '<', 0.08816474188286483]
-average number of queries on training set: 241.5
-
-class: 7
-cond 1: ['SCORE_DIFF', '<', 0.071683929359552]
-cond 2: ['SCORE_DIFF', '>', 0.28910835667385854]
-average number of queries on training set: 82.6
-
-class: 8
-cond 1: ['SCORE_DIFF', '<', 0.016391953671486232]
-cond 2: ['MAX', '<', 0.4707303665144593]
-average number of queries on training set: 214.88888888888889
-
-class: 9
-cond 1: ['MEAN', '>', 0.2586376668997671]
-cond 2: ['MIN', '<', 0.011107323082721443]
-average number of queries on training set: 156.1
+cond 1: ['MEAN', '>', 0.21820874896174502]
+cond 2: ['SCORE_DIFF', '>', 0.07137407501069486]
+average number of queries on training set: 73.9
 

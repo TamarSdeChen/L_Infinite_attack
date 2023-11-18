@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import pandas as pd
 import torch.multiprocessing as tmp
+import random
 from torch.utils.data import DataLoader
 from metropolis_hastings import run_MH
 from utils import *
@@ -41,9 +42,8 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
     center_matrix = center_matrix.to(device)
 
     pert_img_to_idx_dict = create_pert_type_to_idx_dict()  # notice: pert per_square(0,0,0) -> 0, (1,0,0) -> 1 ect
-
     if is_test:
-        results_df = pd.DataFrame(columns=["batch_idx", "class", "is_success", "queries"])
+        results_df = pd.DataFrame(columns=["batch_idx", "class", "is_success", "queries", "pert_img"])
     num_imgs, num_success, sum_queries = 0, 0, 0
     max_queries = max_queries
 
@@ -59,11 +59,13 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
             continue
         num_imgs += 1
         possible_loc_pert_list = create_sorted_pert_list(img_x)  # for now - it returns basic LIST not sorted!
+        random.shuffle(possible_loc_pert_list)
         # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
         # indicators_tensor = torch.zeros((8, img_dim, img_dim))
         orig_prob = get_orig_confidence(model, img_x, img_y, device)
         n_queries = 0
+        pert_img_to_df = []
         min_prob_dict = {}
         # few_pixel_list = []
         all_pert_neighbors_list = create_neighbors_list()
@@ -107,6 +109,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
 
             n_queries += queries
             if is_success:
+                pert_img_to_df = pert_img
                 sum_queries += n_queries
                 break
             # update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
@@ -140,6 +143,8 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                 if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
 
                     for num_square in range(4):  # currently we have 4 squares for 1 image
+                        if is_success:
+                            break
                         square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
                         pert_idx = pert_img_to_idx_dict[square_pert]
                         curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
@@ -163,6 +168,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                             n_queries += queries
                             pert_queue.put((closest_pert, curr_prob))
                             if is_success:
+                                pert_img_to_df = closest_pert
                                 sum_queries += n_queries
                                 break
 
@@ -171,7 +177,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
 
         if is_test:
             results_df = update_results_df(results_df, results_path, batch_idx, class_idx, is_success, n_queries,
-                                           n_perturbed_pixels)
+                                           pert_img_to_df)
     model.to('cpu')
     if not is_test:
         return sum_queries / num_success
@@ -309,7 +315,7 @@ if __name__ == '__main__':
                         help='Model architecture to use (e.g., vgg16, resnet18, etc.)')
     parser.add_argument('--data_set', default='cifar10', type=str, choices=['cifar10', 'imagenet'],
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
-    parser.add_argument('--classes_list', default=list([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), metavar='N', type=int,
+    parser.add_argument('--classes_list', default=list([1]), metavar='N', type=int,
                         nargs='+', help='List of classes for the synthesis')
     parser.add_argument('--num_train_images', default=10, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
