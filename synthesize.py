@@ -12,7 +12,7 @@ from utils import *
 
 
 def run_program(program, model, dataloader, img_dim, center_matrix, max_queries, mean_norm,
-                std_norm, device, is_test=False, class_idx=None, results_path=None, max_k=1):
+                std_norm, device, is_test=False, class_idx=None, results_path=None, max_k=1, amount_square):
     """
     Run the specified program for adversarial attacks on a given model using the provided dataloader.
 
@@ -58,7 +58,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
         if not is_correct_prediction(model, img_x, img_y):
             continue
         num_imgs += 1
-        possible_loc_pert_list = create_sorted_pert_list(img_x)  # for now - it returns basic LIST not sorted!
+        possible_loc_pert_list = create_sorted_pert_list(amount_square)  # for now - it returns basic LIST not sorted!
         random.shuffle(possible_loc_pert_list)
         # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
@@ -69,7 +69,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
         min_prob_dict = {}
         # few_pixel_list = []
         all_pert_neighbors_list = create_neighbors_list()
-        for pert_img in possible_loc_pert_list:  # pert_img is tuple with 4 tuple inside
+        for pert_img in possible_loc_pert_list:  # pert_img is list with amount of squares tuple inside
             if (n_queries >= max_queries and is_test) or is_success:
                 break
 
@@ -103,7 +103,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
             # if indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] > 0:  # we dont have it, change
             #     continue
 
-            is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, pert_img, device)
+            is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, pert_img, device, amount_square)
 
             # indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] = 1
 
@@ -116,7 +116,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
             # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
             if check_cond(program.cond_1, img_x, orig_prob, curr_prob):
-                for num_square in range(4):  # currently we have 4 squares for 1 image
+                for num_square in range(amount_square):
                     square_pert = pert_img[num_square]  # this is a tuple (-,-,-)
 
                     # push back all the neighbors of this current square
@@ -124,7 +124,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                     curr_pert_neighbors_list = all_pert_neighbors_list[pert_idx]  # list of 3 tuple
                     for neighbor in curr_pert_neighbors_list:
                         closest_pert = create_new_neighbors_pert(neighbor, num_square, pert_img)  # this is a
-                        # tuple of 4 tuple
+                        # list of amount of squares tuples
                         possible_loc_pert_list.append(possible_loc_pert_list. \
                                                       pop(possible_loc_pert_list.index(closest_pert)))
             # end new code
@@ -142,7 +142,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
 
                 if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
 
-                    for num_square in range(4):  # currently we have 4 squares for 1 image
+                    for num_square in range(amount_square):  # currently we have 4 squares for 1 image
                         if is_success:
                             break
                         square_pert = curr_pert[num_square]  # this is a tuple (-,-,-)
@@ -164,7 +164,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                             if n_queries >= max_queries and is_test:
                                 break
                             is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, closest_pert,
-                                                                             device)
+                                                                             device, amount_square)
                             n_queries += queries
                             pert_queue.put((closest_pert, curr_prob))
                             if is_success:
@@ -255,7 +255,7 @@ def synthesize(args):
         best_program = program_.Program(img_dim)
 
         best_queries = run_program(best_program, model, data_loader, img_dim, center_matrix, \
-                                   args.max_queries, args.mean_norm, args.std_norm, device)
+                                   args.max_queries, args.mean_norm, args.std_norm, device, amount_square)
         print("after run program")
         previous_best_queries = None
         num_same_best_queries_iter = 1
@@ -329,6 +329,8 @@ if __name__ == '__main__':
                         help='List of mean values for each channel used in image normalization. Default is [0.0, 0.0, 0.0]')
     parser.add_argument('--std_norm', metavar='N', type=float, nargs='+', default=[1.0, 1.0, 1.0], \
                         help='List of standard deviation values for each channel used in image normalization. Default is [1.0, 1.0, 1.0]')
+    parser.add_argument('--amount_square', default=4, type=int, help='The number of squares that will divided the image of')
+
 
     print('hi')
     args = parser.parse_args()

@@ -92,6 +92,7 @@ if __name__ == '__main__':
         help='List of mean values for each channel used in image normalization. Default is [0.0, 0.0, 0.0]')
     parser.add_argument('--std_norm', metavar='N', type=float, nargs='+', default=[1.0, 1.0, 1.0],\
         help='List of standard deviation values for each channel used in image normalization. Default is [1.0, 1.0, 1.0]')
+    parser.add_argument('--amount_square', default=4, type=int, help='The number of squares that will divided the image of')
 
     args = parser.parse_args()
     attack(args)

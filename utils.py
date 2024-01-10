@@ -162,13 +162,12 @@ def argsort(seq):
 #     return pixel_pert_dict
 
 
-def create_sorted_pert_list(img_x):
+def create_sorted_pert_list(amount_square):
     """
     Create a sorted list of pixel perturbation types based on the difference of the perturbation type
     from the original pixel as the primary key and the distance from the center as a secondary key.
 
     Args:
-        img_x (torch.Tensor): The input image tensor.
         lmh_dict (dict): A dictionary containing the 'min_values', 'mid_values', and 'max_values' for the perturbations.
         - FOR NOW WE REMOVE IT
 
@@ -186,14 +185,8 @@ def create_sorted_pert_list(img_x):
 
     # loc_pert_dict = create_loc_pert_dict(img_x, lmh_dict['mid_values'])
     possible_pert = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (0, 1, 1), (1, 1, 0), (1, 0, 1), (1, 1, 1)]
-    possible_pert_list = []
-
-    for i in range(len(possible_pert)):
-        for j in range(len(possible_pert)):
-            for k in range(len(possible_pert)):
-                for n in range(len(possible_pert)):
-                    possible_pert_list.append([possible_pert[i], possible_pert[j],
-                                               possible_pert[k], possible_pert[n]])
+    possible_pert_list_tuples = list(itertools.combinations_with_replacement(possible_pert, amount_square))
+    possible_pert_list = [list(ele) for ele in possible_pert_list_tuples]
 
     return possible_pert_list
 
@@ -392,15 +385,17 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         return confidence_diff > value if comparison_operator == ">" else confidence_diff < value
 
 
-def get_intarvel(row, col, img_shape):
+def get_intarvel(row, col, img_shape, amount_square):
     interval_x_start = row * int(img_shape / 2)
     interval_x_end = row * int(img_shape / 2) + int(img_shape / 2)
-    interval_y_start = col * int(img_shape / 2)
-    interval_y_end = col * int(img_shape / 2) + int(img_shape / 2)
+    interval_y_start = col * int(img_shape / (amount_square / 2))
+    interval_y_end = col * int(img_shape / (amount_square / 2)) + int(img_shape / (amount_square / 2))
+    if (col == ((amount_square / 2) - 1)) and (interval_y_end != img_shape-1):
+        interval_y_end = img_shape-1
     return [interval_x_start, interval_x_end, interval_y_start, interval_y_end]
 
 
-def try_perturb_img(model, img_x, img_y, perturbation, device):
+def try_perturb_img(model, img_x, img_y, perturbation, device, amount_square):
     """
     Try perturbing a pixel using the specified perturbation type and evaluate the impact on the model's prediction.
 
@@ -422,20 +417,20 @@ def try_perturb_img(model, img_x, img_y, perturbation, device):
     n_queries_pert = 0
     pert_img = torch.clone(img_x)
     img_shape = img_x.shape[-1]
-    # perturbation is tuple perturbation for 4 squares ((,,),(,,),(,,),(,,)) 
-    for num_square in range(4):
-        # pert = perturbation()
-        for row in range(2):
-            for col in range(2):
-                output = get_intarvel(row, col, img_shape)
-                for c, pert in enumerate(perturbation[2 * row + 1 * col]):  # (0,1,0)
-                    if pert == 0:
-                        pert_img[0, c, output[0]:output[1], output[2]:output[3]] = \
-                            pert_img[0, c, output[0]:output[1], output[2]:output[3]] - EPSILON
+    # perturbation is tuple perturbation for amount_squares ((,,),(,,),(,,),(,,))
+    # pert = perturbation()
+    num_row = 3 if amount_square > 8 else 2
+    for row in range(num_row):
+        for col in range(amount_square/num_row):
+            output = get_intarvel(row, col, img_shape, amount_square)
+            for c, pert in enumerate(perturbation[num_row * row + 1 * col]):  # (0,1,0)
+                if pert == 0:
+                    pert_img[0, c, output[0]:output[1], output[2]:output[3]] = \
+                        pert_img[0, c, output[0]:output[1], output[2]:output[3]] - EPSILON
 
-                    else:
-                        pert_img[0, c, output[0]:output[1], output[2]:output[3]] = \
-                            pert_img[0, c, output[0]:output[1], output[2]:output[3]] + EPSILON
+                else:
+                    pert_img[0, c, output[0]:output[1], output[2]:output[3]] = \
+                        pert_img[0, c, output[0]:output[1], output[2]:output[3]] + EPSILON
     pert_img[pert_img < 0] = 0
     pert_img[pert_img > 1] = 1
     # for c, pert in enumerate(pert_type):
