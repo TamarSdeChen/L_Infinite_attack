@@ -13,6 +13,8 @@ from CIFAR10_models.googlenet import GoogLeNet
 from torchvision.models import resnet50, densenet121
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import itertools
+
 
 EPSILON = 8/256
 
@@ -185,7 +187,7 @@ def create_sorted_pert_list(amount_square):
 
     # loc_pert_dict = create_loc_pert_dict(img_x, lmh_dict['mid_values'])
     possible_pert = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (0, 1, 1), (1, 1, 0), (1, 0, 1), (1, 1, 1)]
-    possible_pert_list_tuples = list(itertools.combinations_with_replacement(possible_pert, amount_square))
+    possible_pert_list_tuples = list(itertools.product(possible_pert, repeat=int(amount_square)))
     possible_pert_list = [list(ele) for ele in possible_pert_list_tuples]
 
     return possible_pert_list
@@ -323,7 +325,7 @@ def get_rgb(row, col, img_x):
     return rgb
 
 
-def check_cond(cond, img_x, orig_confidence, confidence):
+def check_cond(cond, img_x, orig_confidence, confidence, amount_square):
     """
     Check if a condition is satisfied for a pixel in the input image.
 
@@ -343,40 +345,42 @@ def check_cond(cond, img_x, orig_confidence, confidence):
         R, G, B = get_rgb(row, col, img_x)
         return list((min(R, G, B), max(R, G, B), ((R + G + B) / 3)))
 
-    matrix_rgb = [[0,0],[0,0]]
-    for x in range(0, 2):
-        for y in range(0, 2):
-            matrix_rgb[x][y] = RGB_per_squre(x, y, img_x)
+    num_row = 3 if amount_square > 8 else 2
+    matrix_rgb = [[[] for _ in range(int(amount_square / num_row))] for _ in range(int(num_row))]
+
+    for row in range(num_row):
+        for col in range(int(amount_square / num_row)):
+            matrix_rgb[row][col] = RGB_per_squre(row, col, img_x)
 
     confidence_diff = (orig_confidence - confidence).item()
     condition_type, comparison_operator, value = cond
 
     def bigger_than(cond_type, value):
         counter = 0
-        for x in range(0, 2):
-            for y in range(0, 2):
-                if (cond_type == "MIN") and (matrix_rgb[x][y][0] > value):
+        for row in range(num_row):
+            for col in range(int(amount_square / num_row)):
+                if (cond_type == "MIN") and (matrix_rgb[row][col][0] > value):
                     counter += 1
-                elif (cond_type == "MAX") and (matrix_rgb[x][y][1] > value):
+                elif (cond_type == "MAX") and (matrix_rgb[row][col][1] > value):
                     counter += 1
-                elif (cond_type == "MEAN") and (matrix_rgb[x][y][2] > value):
+                elif (cond_type == "MEAN") and (matrix_rgb[row][col][2] > value):
                     counter += 1
 
-        if counter >= 3:
+        if counter >=  (amount_square - 1):
             return True
 
     def smaller_than(cond_type, value):
         counter = 0
-        for x in range(0, 2):
-            for y in range(0, 2):
-                if (cond_type == "MIN") and (matrix_rgb[x][y][0] < value):
+        for row in range(num_row):
+            for col in range(int(amount_square / num_row)):
+                if (cond_type == "MIN") and (matrix_rgb[row][col][0] < value):
                     counter += 1
-                elif (cond_type == "MAX") and (matrix_rgb[x][y][1] < value):
+                elif (cond_type == "MAX") and (matrix_rgb[row][col][1] < value):
                     counter += 1
-                elif (cond_type == "MEAN") and (matrix_rgb[x][y][2] < value):
+                elif (cond_type == "MEAN") and (matrix_rgb[row][col][2] < value):
                     counter += 1
 
-        if counter >= 3:
+        if counter >= (amount_square - 1):
             return True
 
     if condition_type == "MIN" or condition_type == "MAX" or condition_type == "MEAN":
@@ -390,8 +394,8 @@ def get_intarvel(row, col, img_shape, amount_square):
     interval_x_end = row * int(img_shape / 2) + int(img_shape / 2)
     interval_y_start = col * int(img_shape / (amount_square / 2))
     interval_y_end = col * int(img_shape / (amount_square / 2)) + int(img_shape / (amount_square / 2))
-    if (col == ((amount_square / 2) - 1)) and (interval_y_end != img_shape-1):
-        interval_y_end = img_shape-1
+    if (col == ((amount_square / 2) - 1)) and (interval_y_end != img_shape):
+        interval_y_end = img_shape
     return [interval_x_start, interval_x_end, interval_y_start, interval_y_end]
 
 
@@ -421,7 +425,7 @@ def try_perturb_img(model, img_x, img_y, perturbation, device, amount_square):
     # pert = perturbation()
     num_row = 3 if amount_square > 8 else 2
     for row in range(num_row):
-        for col in range(amount_square/num_row):
+        for col in range(int(amount_square/num_row)):
             output = get_intarvel(row, col, img_shape, amount_square)
             for c, pert in enumerate(perturbation[num_row * row + 1 * col]):  # (0,1,0)
                 if pert == 0:
@@ -656,9 +660,9 @@ def write_program_results(args, class_idx, best_program, best_queries):
 
 
 def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g, g, lmh_dict, mean_norm, std_norm,
-                    device):
+                    device, amount_square):
     """
-    Selects n images from a data loader such that a successful one pixel attack can be performed on the selected images.
+    Selects n images from a data loader such that a successful L-infinite attack can be performed on the selected images.
 
     Args:
         num_synthesis_images (int): The number of images to select.
@@ -683,12 +687,13 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
         for batch_idx, (data, target) in enumerate(data_loader):
             is_success = False
             img_x, img_y = data.to(device), target.to(device)
-
-            if not is_correct_prediction(model, img_x, img_y) or img_y.item() != true_label:
+            if img_y.item() != true_label:
+                continue
+            if not is_correct_prediction(model, img_x, img_y):
                 continue
             
             # got here if we found correctly classified image 
-            possible_perturbations = create_sorted_pert_list(img_x)  # create a basic list L with all possible
+            possible_perturbations = create_sorted_pert_list(amount_square)  # create a basic list L with all possible
             # perturbations, each item is ((),(),(),())
             possible_perturbations.append("STOP")
             # min_confidence_dict = {}
@@ -711,7 +716,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                     #         model, img_x, img_y, g, mean_norm, std_norm, device)
 
                     continue
-                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_img, device)
+                is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_img, device, amount_square)
 
 
             if is_success:
@@ -719,7 +724,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                 progress_bar.update(1)
 
                 if len(successful_indices) == num_synthesis_images:
-                    return successful_indices
+                    return successful_indices, pert_img
 
 
 def update_results_df(results_df, results_path, batch_idx, class_idx, is_success, n_queries, pert_img):

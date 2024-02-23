@@ -59,7 +59,7 @@ def attack(args):
     for i in range(num_gpus):
         available_devices.put(f"cuda:{i}")
     task_list = [(i, program_dict[args.classes_list[i]], model, test_loader, img_dim, center_matrix, \
-         args.max_queries, args.mean_norm, args.std_norm, devices[i % num_gpus], True,\
+         args.max_queries, args.mean_norm, args.std_norm, devices[i % num_gpus], args.amount_square, True,\
                   args.classes_list[i], args.results_path, args.max_k) for i in range(num_classes)]
     #print('gor here 2')
     #print(len(task_list))

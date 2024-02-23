@@ -12,7 +12,7 @@ from utils import *
 
 
 def run_program(program, model, dataloader, img_dim, center_matrix, max_queries, mean_norm,
-                std_norm, device, is_test=False, class_idx=None, results_path=None, max_k=1, amount_square):
+                std_norm, device, amount_square, correct_pert_n_images, is_test=False, class_idx=None, results_path=None, max_k=1):
     """
     Run the specified program for adversarial attacks on a given model using the provided dataloader.
 
@@ -58,8 +58,9 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
         if not is_correct_prediction(model, img_x, img_y):
             continue
         num_imgs += 1
-        possible_loc_pert_list = create_sorted_pert_list(amount_square)  # for now - it returns basic LIST not sorted!
-        random.shuffle(possible_loc_pert_list)
+        #possible_loc_pert_list = create_sorted_pert_list(amount_square)  # for now - it returns basic LIST not sorted!
+        possible_loc_pert_list = [correct_pert_n_images]
+#        random.shuffle(possible_loc_pert_list)
         # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
         # indicators_tensor = torch.zeros((8, img_dim, img_dim))
@@ -102,7 +103,8 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
 
             # if indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] > 0:  # we dont have it, change
             #     continue
-
+            if (pert_img == correct_pert_n_images):
+                print("hi")
             is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, pert_img, device, amount_square)
 
             # indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] = 1
@@ -115,7 +117,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
             # update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
             # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
             # new code:
-            if check_cond(program.cond_1, img_x, orig_prob, curr_prob):
+            if check_cond(program.cond_1, img_x, orig_prob, curr_prob, amount_square):
                 for num_square in range(amount_square):
                     square_pert = pert_img[num_square]  # this is a tuple (-,-,-)
 
@@ -140,7 +142,7 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                 curr_prob = pert_prob[1]
                 # change to Queue of perturbation only !!
 
-                if check_cond(program.cond_2, img_x, orig_prob, curr_prob):
+                if check_cond(program.cond_2, img_x, orig_prob, curr_prob, amount_square):
 
                     for num_square in range(amount_square):  # currently we have 4 squares for 1 image
                         if is_success:
@@ -163,6 +165,8 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
 
                             if n_queries >= max_queries and is_test:
                                 break
+                            if (closest_pert == correct_pert_n_images):
+                                print("hi")
                             is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, closest_pert,
                                                                              device, amount_square)
                             n_queries += queries
@@ -245,9 +249,8 @@ def synthesize(args):
         print("########################")
 
         # Select a subset of images from the class
-        train_imgs_idx = select_n_images(args.num_train_images, class_idx, train_loader, model, args.max_g, args.g,
-                                         lmh_dict, args.mean_norm, args.std_norm, device)
-        print('after select_n_images')
+        train_imgs_idx, correct_pert_n_images = select_n_images(args.num_train_images, class_idx, train_loader, model, args.max_g, args.g,
+                                         lmh_dict, args.mean_norm, args.std_norm, device, args.amount_square)
         n_train_data = torch.utils.data.Subset(train_data, train_imgs_idx)
         data_loader = torch.utils.data.DataLoader(n_train_data, shuffle=False, batch_size=1)
 
@@ -255,8 +258,7 @@ def synthesize(args):
         best_program = program_.Program(img_dim)
 
         best_queries = run_program(best_program, model, data_loader, img_dim, center_matrix, \
-                                   args.max_queries, args.mean_norm, args.std_norm, device, amount_square)
-        print("after run program")
+                                   args.max_queries, args.mean_norm, args.std_norm, device, args.amount_square, correct_pert_n_images)
         previous_best_queries = None
         num_same_best_queries_iter = 1
 
@@ -293,8 +295,7 @@ def synthesize(args):
                                                      center_matrix,
                                                      10, queue_proc, \
                                                      args.max_g, args.g, args.max_queries, lmh_dict, args.mean_norm,
-                                                     args.std_norm, device_)))
-
+                                                     args.std_norm, device_, args.amount_square, correct_pert_n_images)))
                 # Start and join all processes
                 for proc in processes:
                     proc.start()
@@ -317,7 +318,7 @@ if __name__ == '__main__':
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
     parser.add_argument('--classes_list', default=list([1]), metavar='N', type=int,
                         nargs='+', help='List of classes for the synthesis')
-    parser.add_argument('--num_train_images', default=10, type=int, help='# of images in the training set per class')
+    parser.add_argument('--num_train_images', default=1, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
     parser.add_argument('--max_iter', default=210, type=int, help='Maximum # of iterations for the MH algorithm')
     parser.add_argument('--num_iter_stop', default=60, type=int,
