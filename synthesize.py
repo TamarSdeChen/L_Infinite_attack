@@ -12,7 +12,8 @@ from utils import *
 
 
 def run_program(program, model, dataloader, img_dim, center_matrix, max_queries, mean_norm,
-                std_norm, device, amount_square, correct_pert_n_images, is_test=False, class_idx=None, results_path=None, max_k=1):
+                std_norm, device, amount_square, is_test=False, class_idx=None,
+                results_path=None, max_k=1):
     """
     Run the specified program for adversarial attacks on a given model using the provided dataloader.
 
@@ -58,9 +59,8 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
         if not is_correct_prediction(model, img_x, img_y):
             continue
         num_imgs += 1
-        #possible_loc_pert_list = create_sorted_pert_list(amount_square)  # for now - it returns basic LIST not sorted!
-        possible_loc_pert_list = [correct_pert_n_images]
-#        random.shuffle(possible_loc_pert_list)
+        possible_loc_pert_list = create_sorted_pert_list(amount_square)  # for now - it returns basic LIST not sorted!
+        random.shuffle(possible_loc_pert_list)
         # perturbations list, each item contain 4 tuples because the image is split to 4 squares
         possible_loc_pert_list.append("STOP")
         # indicators_tensor = torch.zeros((8, img_dim, img_dim))
@@ -75,48 +75,16 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                 break
 
             if pert_img == "STOP":
-                # # Few pixel attack
-                # if is_test and max_k > 1:
-                #     few_pixel_list = sorted(few_pixel_list, key=lambda x: x[2])
-                #     is_success, queries, curr_prob, n_perturbed_pixels = try_perturb_few_pixels(max_k, few_pixel_list,
-                #                                                                                 model, img_x, img_y,
-                #                                                                                 n_queries, max_queries,
-                #                                                                                 lmh_dict, device)
-                #     n_queries += queries
-                #     if is_success:
-                #         sum_queries += n_queries
-                #     break
-
-                # # Finer granularity
-                # sorted_loc_list = sorted(min_prob_dict.items(), key=lambda x: x[1])
-                # for loc_idx in range(max_g):
-                #     if g <= 0:
-                #         break
-                #     is_success, queries, curr_prob = try_perturb_pixel_finer_granularity(sorted_loc_list[loc_idx][0][0],
-                #                                                                          sorted_loc_list[loc_idx][0][1],
-                #                                                                          model, img_x, img_y, g,
-                #                                                                          mean_norm, std_norm, device)
-                #     n_queries += queries
-                #     if is_success:
-                #         sum_queries += n_queries
                 continue
 
-            # if indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] > 0:  # we dont have it, change
-            #     continue
-            if (pert_img == correct_pert_n_images):
-                print("hi")
             is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, pert_img, device, amount_square)
-
-            # indicators_tensor[pert_img_to_idx_dict[pert_img]][x][y] = 1
 
             n_queries += queries
             if is_success:
                 pert_img_to_df = pert_img
                 sum_queries += n_queries
                 break
-            # update_min_confidence_dict(min_prob_dict, pert_img, curr_prob)
-            # few_pixel_list.append([(x, y), pert_img, curr_prob.item()])
-            # new code:
+
             if check_cond(program.cond_1, img_x, orig_prob, curr_prob, amount_square):
                 for num_square in range(amount_square):
                     square_pert = pert_img[num_square]  # this is a tuple (-,-,-)
@@ -129,7 +97,6 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                         # list of amount of squares tuples
                         possible_loc_pert_list.append(possible_loc_pert_list. \
                                                       pop(possible_loc_pert_list.index(closest_pert)))
-            # end new code
 
             pert_queue = initialize_pixels_conf_queues(pert_img, curr_prob)  # pert_img is a
             # perturbation contain 4 tuples
@@ -157,16 +124,13 @@ def run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
                             try:
                                 indicator_idx = possible_loc_pert_list.index(closest_pert)
                             except:
-                                # print('got here')
                                 continue
 
                             possible_loc_pert_list.pop(indicator_idx)
-                            # print(len(possible_loc_pert_list))
 
                             if n_queries >= max_queries and is_test:
                                 break
-                            if (closest_pert == correct_pert_n_images):
-                                print("hi")
+
                             is_success, queries, curr_prob = try_perturb_img(model, img_x, img_y, closest_pert,
                                                                              device, amount_square)
                             n_queries += queries
@@ -249,8 +213,10 @@ def synthesize(args):
         print("########################")
 
         # Select a subset of images from the class
-        train_imgs_idx, correct_pert_n_images = select_n_images(args.num_train_images, class_idx, train_loader, model, args.max_g, args.g,
-                                         lmh_dict, args.mean_norm, args.std_norm, device, args.amount_square)
+        train_imgs_idx = select_n_images(args.num_train_images, class_idx, train_loader, model,
+                                                                args.max_g, args.g,
+                                                                lmh_dict, args.mean_norm, args.std_norm, device,
+                                                                args.amount_square)
         n_train_data = torch.utils.data.Subset(train_data, train_imgs_idx)
         data_loader = torch.utils.data.DataLoader(n_train_data, shuffle=False, batch_size=1)
 
@@ -258,7 +224,7 @@ def synthesize(args):
         best_program = program_.Program(img_dim)
 
         best_queries = run_program(best_program, model, data_loader, img_dim, center_matrix, \
-                                   args.max_queries, args.mean_norm, args.std_norm, device, args.amount_square, correct_pert_n_images)
+                                   args.max_queries, args.mean_norm, args.std_norm, device, args.amount_square)
         previous_best_queries = None
         num_same_best_queries_iter = 1
 
@@ -295,7 +261,8 @@ def synthesize(args):
                                                      center_matrix,
                                                      10, queue_proc, \
                                                      args.max_g, args.g, args.max_queries, lmh_dict, args.mean_norm,
-                                                     args.std_norm, device_, args.amount_square, correct_pert_n_images)))
+                                                     args.std_norm, device_, args.amount_square
+                                                     )))
                 # Start and join all processes
                 for proc in processes:
                     proc.start()
@@ -318,22 +285,20 @@ if __name__ == '__main__':
                         help='Dataset to use - must be CIFAR-10 or ImageNet')
     parser.add_argument('--classes_list', default=list([1]), metavar='N', type=int,
                         nargs='+', help='List of classes for the synthesis')
-    parser.add_argument('--num_train_images', default=1, type=int, help='# of images in the training set per class')
+    parser.add_argument('--num_train_images', default=10, type=int, help='# of images in the training set per class')
     parser.add_argument('--imagenet_dir', type=str, help='Directory containing ImageNet dataset images')
     parser.add_argument('--max_iter', default=210, type=int, help='Maximum # of iterations for the MH algorithm')
     parser.add_argument('--num_iter_stop', default=60, type=int,
                         help='# of iterations without change before stopping the algorithm')
     parser.add_argument('--g', default=0, type=int, help='Granularity level for the synthesis process')
     parser.add_argument('--max_g', default=0, type=int, help='Maximum number of pixels with finer granularity')
-    parser.add_argument('--max_queries', default=10000, type=int, help='maximal number of queries per image')
+    parser.add_argument('--max_queries', default=500, type=int, help='maximal number of queries per image')
     parser.add_argument('--mean_norm', metavar='N', type=float, nargs='+', default=[0.0, 0.0, 0.0], \
                         help='List of mean values for each channel used in image normalization. Default is [0.0, 0.0, 0.0]')
     parser.add_argument('--std_norm', metavar='N', type=float, nargs='+', default=[1.0, 1.0, 1.0], \
                         help='List of standard deviation values for each channel used in image normalization. Default is [1.0, 1.0, 1.0]')
-    parser.add_argument('--amount_square', default=4, type=int, help='The number of squares that will divided the image of')
+    parser.add_argument('--amount_square', default=6, type=int,
+                        help='The number of squares that will divided the image of')
 
-
-    print('hi')
     args = parser.parse_args()
-    print(args)
     synthesize(args)

@@ -685,6 +685,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
     with tqdm(total=num_synthesis_images, desc="Creating data set for synthesis",
               bar_format="{l_bar}{bar:10}{r_bar}") as progress_bar:
         for batch_idx, (data, target) in enumerate(data_loader):
+            print("try image")
             is_success = False
             img_x, img_y = data.to(device), target.to(device)
             if img_y.item() != true_label:
@@ -703,18 +704,6 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                     break
 
                 if pert_img == "STOP":
-                    # sorted_loc_list = sorted(min_confidence_dict.items(), key=lambda x: x[1])
-
-                    # Try perturbing the pixels with finer granularity
-                    # for loc_idx in range(max_g):
-                    #     if g <= 0:
-                    #         break
-                    #
-                    #     is_success, queries, curr_confidence = try_perturb_pixel_finer_granularity(
-                    #         sorted_loc_list[loc_idx][0][0],
-                    #         sorted_loc_list[loc_idx][0][1],
-                    #         model, img_x, img_y, g, mean_norm, std_norm, device)
-
                     continue
                 is_success, queries, curr_confidence = try_perturb_img(model, img_x, img_y, pert_img, device, amount_square)
 
@@ -724,7 +713,7 @@ def select_n_images(num_synthesis_images, true_label, data_loader, model, max_g,
                 progress_bar.update(1)
 
                 if len(successful_indices) == num_synthesis_images:
-                    return successful_indices, pert_img
+                    return successful_indices
 
 
 def update_results_df(results_df, results_path, batch_idx, class_idx, is_success, n_queries, pert_img):

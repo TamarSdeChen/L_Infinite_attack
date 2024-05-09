@@ -48,7 +48,9 @@ def mutate_condition_type(program, img_dim, idx):
 
 
 def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix, max_iter, queue_proc, max_g, g,\
-           max_queries, lmh_dict, mean_norm, std_norm, device, amount_square, correct_pert_n_images):
+           max_queries, lmh_dict, mean_norm, std_norm, device,
+
+           ):
     """
     Perform Metropolis-Hastings algorithm for program optimization.
 
@@ -102,7 +104,7 @@ def run_MH(init_program, init_queries, model, dataloader, img_dim, center_matrix
                     break
 
         queries = run_program(program, model, dataloader, img_dim, center_matrix, max_queries,
-                              mean_norm, std_norm, device, amount_square, correct_pert_n_images)
+                              mean_norm, std_norm, device, amount_square)
         score = math.e ** (-beta * (queries))
         if score == 0 or best_score == 0:
             alpha = 0
