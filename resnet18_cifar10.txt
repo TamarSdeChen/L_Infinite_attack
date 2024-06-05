@@ -1,7 +1,0 @@
-data set: cifar10
-number of training images: 10
-class: 1
-cond 1: ['MEAN', '>', 0.21820874896174502]
-cond 2: ['SCORE_DIFF', '>', 0.07137407501069486]
-average number of queries on training set: 73.9
-
