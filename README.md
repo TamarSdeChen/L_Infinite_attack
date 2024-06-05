@@ -12,13 +12,16 @@ Our project is based on a recent paper "One Pixel Adversarial Attacks via Sketch
 (one and a few pixel attacks). The idea presented in the original paper is to generate candidate attacks and submit them one-by-one to the network based on a priority queue. If the attack is successful, the algorithm is completed. Otherwise, the prioritization of the remaining candidates is updated based on the learned conditions. 
 
 The goal of our project is to extend the approach that has been shown in the original paper to L∞ attacks and show how a computer program can compute an L∞ attack with a minimal number of queries. We have started with a program sketch like the L0 program sketch and updated it to the L∞ setting.
+
 <img src="beforeandafter.png" alt="Example Image" width="500"/>
+
 ## Results
 Our L∞ attack reached to 6.5% success rate on 2X2 grid, which means that the algorithm found a successful attack to 6.5% from the test set images with 134 as the average number of queries until finding the successful attack.
 Additionally, our analysis includes calculating the standard deviation, resulting in a value of 324.
 
 To analyze the variability in our dataset and pinpoint any potential anomalies, we create a histogram illustrating the distribution of attack outcomes:
-![Example Image](histogram.png = 250x250)
+
+<img src="histogram.png" alt="Example Image" width="500"/>
 
 ## Models
 CIFAR-10 models adapted from [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.4431043.svg)](http://dx.doi.org/10.5281/zenodo.4431043). 
