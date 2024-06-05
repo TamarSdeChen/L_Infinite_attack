@@ -341,52 +341,53 @@ def check_cond(cond, img_x, orig_confidence, confidence, amount_square):
     """
 
     # R, G, B = img_x[0, 0, x, y].item(), img_x[0, 1, x, y].item(), img_x[0, 2, x, y].item()
-    def RGB_per_squre(row, col, img_x):
-        R, G, B = get_rgb(row, col, img_x)
-        return list((min(R, G, B), max(R, G, B), ((R + G + B) / 3)))
-
-    num_row = 3 if amount_square > 8 else 2
-    matrix_rgb = [[[] for _ in range(int(amount_square / num_row))] for _ in range(int(num_row))]
-
-    for row in range(num_row):
-        for col in range(int(amount_square / num_row)):
-            matrix_rgb[row][col] = RGB_per_squre(row, col, img_x)
-
-    confidence_diff = (orig_confidence - confidence).item()
-    condition_type, comparison_operator, value = cond
-
-    def bigger_than(cond_type, value):
-        counter = 0
-        for row in range(num_row):
-            for col in range(int(amount_square / num_row)):
-                if (cond_type == "MIN") and (matrix_rgb[row][col][0] > value):
-                    counter += 1
-                elif (cond_type == "MAX") and (matrix_rgb[row][col][1] > value):
-                    counter += 1
-                elif (cond_type == "MEAN") and (matrix_rgb[row][col][2] > value):
-                    counter += 1
-
-        if counter >=  (amount_square - 1):
-            return True
-
-    def smaller_than(cond_type, value):
-        counter = 0
-        for row in range(num_row):
-            for col in range(int(amount_square / num_row)):
-                if (cond_type == "MIN") and (matrix_rgb[row][col][0] < value):
-                    counter += 1
-                elif (cond_type == "MAX") and (matrix_rgb[row][col][1] < value):
-                    counter += 1
-                elif (cond_type == "MEAN") and (matrix_rgb[row][col][2] < value):
-                    counter += 1
-
-        if counter >= (amount_square - 1):
-            return True
-
-    if condition_type == "MIN" or condition_type == "MAX" or condition_type == "MEAN":
-        return bigger_than(condition_type, value) if comparison_operator == ">" else smaller_than(condition_type, value)
-    elif condition_type == "SCORE_DIFF":
-        return confidence_diff > value if comparison_operator == ">" else confidence_diff < value
+    return False
+    # def RGB_per_squre(row, col, img_x):
+    #     R, G, B = get_rgb(row, col, img_x)
+    #     return list((min(R, G, B), max(R, G, B), ((R + G + B) / 3)))
+    #
+    # num_row = 3 if amount_square > 8 else 2
+    # matrix_rgb = [[[] for _ in range(int(amount_square / num_row))] for _ in range(int(num_row))]
+    #
+    # for row in range(num_row):
+    #     for col in range(int(amount_square / num_row)):
+    #         matrix_rgb[row][col] = RGB_per_squre(row, col, img_x)
+    #
+    # confidence_diff = (orig_confidence - confidence).item()
+    # condition_type, comparison_operator, value = cond
+    #
+    # def bigger_than(cond_type, value):
+    #     counter = 0
+    #     for row in range(num_row):
+    #         for col in range(int(amount_square / num_row)):
+    #             if (cond_type == "MIN") and (matrix_rgb[row][col][0] > value):
+    #                 counter += 1
+    #             elif (cond_type == "MAX") and (matrix_rgb[row][col][1] > value):
+    #                 counter += 1
+    #             elif (cond_type == "MEAN") and (matrix_rgb[row][col][2] > value):
+    #                 counter += 1
+    #
+    #     if counter >=  (amount_square - 1):
+    #         return True
+    #
+    # def smaller_than(cond_type, value):
+    #     counter = 0
+    #     for row in range(num_row):
+    #         for col in range(int(amount_square / num_row)):
+    #             if (cond_type == "MIN") and (matrix_rgb[row][col][0] < value):
+    #                 counter += 1
+    #             elif (cond_type == "MAX") and (matrix_rgb[row][col][1] < value):
+    #                 counter += 1
+    #             elif (cond_type == "MEAN") and (matrix_rgb[row][col][2] < value):
+    #                 counter += 1
+    #
+    #     if counter >= (amount_square - 1):
+    #         return True
+    #
+    # if condition_type == "MIN" or condition_type == "MAX" or condition_type == "MEAN":
+    #     return bigger_than(condition_type, value) if comparison_operator == ">" else smaller_than(condition_type, value)
+    # elif condition_type == "SCORE_DIFF":
+    #     return confidence_diff > value if comparison_operator == ">" else confidence_diff < value
 
 
 def get_intarvel(row, col, img_shape, amount_square):

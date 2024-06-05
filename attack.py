@@ -70,13 +70,13 @@ if __name__ == '__main__':
     parser.add_argument('--results_path', default="./results_L_inifinity", type=str, help='path of the saved results')
     parser.add_argument('--g', default=0, type=int, help='level of granularity')
     parser.add_argument('--max_g', default=0, type=int, help='number of pixels with finer granularity')
-    parser.add_argument('--max_queries', default=500, type=int, help='maximal number of queries per image')
+    parser.add_argument('--max_queries', default=10000, type=int, help='maximal number of queries per image')
     parser.add_argument('--max_k', default=1, type=int, help='maximal number of perturbed pixels')
     parser.add_argument('--mean_norm', metavar='N', type=float, nargs='+', default=[0.0, 0.0, 0.0], \
                         help='List of mean values for each channel used in image normalization. Default is [0.0, 0.0, 0.0]')
     parser.add_argument('--std_norm', metavar='N', type=float, nargs='+', default=[1.0, 1.0, 1.0], \
                         help='List of standard deviation values for each channel used in image normalization. Default is [1.0, 1.0, 1.0]')
-    parser.add_argument('--amount_square', default=6, type=int,
+    parser.add_argument('--amount_square', default=4, type=int,
                         help='The number of squares that will divided the image of')
 
     args = parser.parse_args()
